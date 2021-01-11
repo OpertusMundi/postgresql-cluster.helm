@@ -1,0 +1,37 @@
+# vim: set filetype=helm: 
+
+---
+# A headless service for the master instance of the database cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-master
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  selector: 
+    {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 4 }} 
+  clusterIP: None
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+
+
+---
+# A headless service for the standby instance(s) of the database cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-standby
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  selector: 
+    {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 4 }} 
+  clusterIP: None
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+

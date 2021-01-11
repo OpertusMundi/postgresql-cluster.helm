@@ -1,0 +1,27 @@
+# vim: set filetype=helm:
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  {{- (.Files.Glob "files/config/*.conf").AsConfig | nindent 2 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-init-scripts
+data:
+  {{- (.Files.Glob "files/init-scripts/*.sh").AsConfig | nindent 2 }}
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-basebackup-scripts
+data:
+  {{- (.Files.Glob "files/basebackup.sh").AsConfig | nindent 2 }}
+

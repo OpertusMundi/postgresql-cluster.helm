@@ -1,0 +1,77 @@
+
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+postgresPassword:
+  secretName:
+
+replicationPassword:
+  secretName:
+
+monitorPassword:
+  secretName:
+
+userPasswords:
+  secretName:
+
+postgres:
+  image: 'postgres:10.14-alpine'
+  #image: 'postgis/postgis:10-3.0-alpine'
+  
+  securityContext:
+    # The id of the user/group running postgres
+    # (it depends on the image used, e.g. is different in alpine/ubuntu variants) 
+    uid: 70
+    gid: 70 
+  
+  tls:
+    secretName: 
+  
+  volumeClaims:
+    dataDir:
+      size: 256Mi
+      storageClassName: local-1
+      matchLabels: {}
+    archiveDir: 
+      size: 256Mi
+      storageClassName: nas-1
+      matchLabels: {}
+
+  config:
+    maxNumberOfConnections: 150
+  
+  # resources for each server (master or standby)
+  resources:
+    limits:
+       cpu: 2.0
+       memory: 1024Mi
+    requests:
+       cpu: 1.0
+       memory: 256Mi
+
+  # the number of standy servers to start
+  replicas: 2
+   
+  
+pgpool:
+  #image: ''
+  resources: {}
+    #limits:
+    #  cpu: 100m
+    #  memory: 128Mi
+    #requests:
+    #  cpu: 100m
+    #  memory: 128Mi
+

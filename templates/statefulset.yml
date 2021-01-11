@@ -1,0 +1,290 @@
+# vim: set filetype=helm: 
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-master
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ .Release.Name }}-master
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
+  {{- with .Values.postgres.volumeClaims }}
+  volumeClaimTemplates:
+  # PVC for data directory
+  - metadata:
+      name: data
+    spec:
+      accessModes: 
+      - ReadWriteOnce
+      storageClassName: {{ .dataDir.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .dataDir.size }}
+      selector:
+        matchLabels:
+          {{- toYaml .dataDir.matchLabels | nindent 10 }}
+  # PVC for archive directory
+  - metadata:
+      name: archive
+    spec:
+      accessModes: 
+      - ReadWriteMany
+      storageClassName: {{ .archiveDir.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .archiveDir.size }}
+      selector:
+        matchLabels:
+          {{- toYaml .archiveDir.matchLabels | nindent 10 }}
+  {{- end }}
+  # Pod template
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "postgresql-cluster.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.postgres.securityContext.gid }}
+      volumes:
+      - name: postgres-password
+        secret:
+          secretName: {{ include "postgresql-cluster.postgresPassword.secretName" . }}
+          defaultMode: 0640
+      - name: monitor-password
+        secret:
+          secretName: {{ include "postgresql-cluster.monitorPassword.secretName" . }}
+          defaultMode: 0640
+      - name: replication-password
+        secret:
+          secretName: {{ include "postgresql-cluster.replicationPassword.secretName" . }}
+          defaultMode: 0640
+      - name: user-passwords
+        secret:
+          secretName: {{ include "postgresql-cluster.userPasswords.secretName" . }}
+          defaultMode: 0640
+      - name: tls
+        secret:
+          secretName: {{ include "postgresql-cluster.postgres.tls.secretName" . }} 
+          defaultMode: 0640
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-config
+      - name: init-scripts
+        configMap:
+          name: {{ .Release.Name }}-init-scripts
+          defaultMode: 0774
+      containers:
+      - name: {{ .Release.Name }}-master
+        image: "{{ .Values.postgres.image }}"
+        imagePullPolicy: IfNotPresent
+        args: 
+          {{- include "postgresql-cluster.postgres.command" .Values.postgres.config | nindent 10 }}
+        env:
+        - name: CONFIG_FILE
+          value: /etc/postgresql/postgresql.conf
+        - name: POSTGRES_PASSWORD_FILE
+          value: /secrets/postgres-password/password
+        - name: REPLICATION_USER
+          value: replicator
+        - name: REPLICATION_PASSWORD_FILE
+          value: /secrets/replication-password/password
+        - name: MONITOR_USER
+          value: monitor
+        - name: MONITOR_PASSWORD_FILE
+          value: /secrets/monitor-password/password
+        - name: USER_PASSWORDS_DIR
+          value: /secrets/users
+        - name: ARCHIVE_DIR
+          value: /var/backups/postgresql/archive
+        - name: TLS_KEY_FILE
+          value: /certs/tls.key
+        - name: TLS_CERT_FILE
+          value: /certs/tls.crt
+        volumeMounts: 
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: archive
+          mountPath: /var/backups/postgresql/archive
+        - name: postgres-password
+          mountPath: /secrets/postgres-password
+          readOnly: true
+        - name: replication-password
+          mountPath: /secrets/replication-password
+          readOnly: true
+        - name: monitor-password
+          mountPath: /secrets/monitor-password
+          readOnly: true
+        - name: user-passwords
+          mountPath: /secrets/users
+          readOnly: true
+        - name: tls
+          mountPath: /certs
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql
+          readOnly: true
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d 
+          readOnly: true
+        ports:
+        - name: postgresql
+          containerPort: 5432
+        livenessProbe: null
+        readinessProbe:
+          exec:
+            command: 
+              {{- include "postgresql-cluster.postgres.readinessCommand" . | nindent 14 }}
+          initialDelaySeconds: 3
+        terminationMessagePolicy: FallbackToLogsOnError 
+        resources:
+          {{- toYaml .Values.postgres.resources | nindent 10 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-standby
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.postgres.replicas }}
+  serviceName: {{ .Release.Name }}-standby
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}
+  {{- with .Values.postgres.volumeClaims }}
+  volumeClaimTemplates:
+  # PVC for data directory
+  - metadata:
+      name: data
+    spec:
+      accessModes: 
+      - ReadWriteOnce
+      storageClassName: {{ .dataDir.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .dataDir.size }}
+      selector:
+        matchLabels:
+          {{- toYaml .dataDir.matchLabels | nindent 10 }}
+  {{- end }}
+  # Pod template
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "postgresql-cluster.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.postgres.securityContext.gid }}
+      volumes:
+      - name: archive-master
+        persistentVolumeClaim:
+          claimName: {{ printf "archive-%s-master-0" .Release.Name }}
+      - name: postgres-password
+        secret:
+          secretName: {{ include "postgresql-cluster.postgresPassword.secretName" . }}
+          defaultMode: 0640
+      - name: replication-password
+        secret:
+          secretName: {{ include "postgresql-cluster.replicationPassword.secretName" . }}
+          defaultMode: 0640
+      - name: tls
+        secret:
+          secretName: {{ include "postgresql-cluster.postgres.tls.secretName" . }} 
+          defaultMode: 0640
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-config
+      - name: basebackup-scripts
+        configMap:
+          name: {{ .Release.Name }}-basebackup-scripts
+          defaultMode: 0774
+      initContainers:
+      - name: {{ .Release.Name }}-basebackup
+        image: "{{ .Values.postgres.image }}"
+        imagePullPolicy: IfNotPresent
+        command: [ 'su-exec', 'postgres', '/opt/basebackup.sh' ]
+        env:
+        - name: REPLICATION_USER
+          value: replicator
+        - name: REPLICATION_PASSWORD_FILE
+          value: /secrets/replication-password/password
+        - name: ARCHIVE_FROM_DIR
+          value: /var/backups/postgresql/archive-master
+        - name: MASTER_DB_HOST
+          value: {{ .Release.Name }}-master
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: replication-password
+          mountPath: /secrets/replication-password
+          readOnly: true
+        - name: basebackup-scripts
+          mountPath: /opt/
+          readOnly: true
+      containers: 
+      - name: {{ .Release.Name }}-standby
+        image: "{{ .Values.postgres.image }}"
+        imagePullPolicy: IfNotPresent
+        args: 
+          {{- include "postgresql-cluster.postgres.command" .Values.postgres.config | nindent 10 }}
+        env:
+        - name: CONFIG_FILE
+          value: /etc/postgresql/postgresql.conf
+        - name: POSTGRES_PASSWORD_FILE
+          value: /secrets/postgres-password/password
+        - name: ARCHIVE_FROM_DIR
+          value: /var/backups/postgresql/archive-master
+        - name: TLS_KEY_FILE
+          value: /certs/tls.key
+        - name: TLS_CERT_FILE
+          value: /certs/tls.crt
+        - name: MASTER_DB_HOST
+          value: {{ .Release.Name }}-master
+        volumeMounts: 
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: archive-master
+          mountPath: /var/backups/postgresql/archive-master
+          readOnly: true
+        - name: postgres-password
+          mountPath: /secrets/postgres-password
+          readOnly: true
+        - name: tls
+          mountPath: /certs
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql
+          readOnly: true
+        ports:
+        - name: postgresql
+          containerPort: 5432
+        livenessProbe: null
+        readinessProbe:
+          exec:
+            command: 
+              {{- include "postgresql-cluster.postgres.readinessCommand" . | nindent 14 }}
+          initialDelaySeconds: 3
+        terminationMessagePolicy: FallbackToLogsOnError 
+        resources:
+          {{- toYaml .Values.postgres.resources | nindent 10 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}

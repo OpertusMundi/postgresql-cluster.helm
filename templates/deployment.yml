@@ -1,0 +1,131 @@
+# vim: set filetype=helm: 
+
+{{- $postgresServiceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{- $masterHost := printf "%s-master-0.%s" .Release.Name $postgresServiceName -}}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-pgpool
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.pgpool.replicas }}
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForPgpool" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "postgresql-cluster.selectorLabelsForPgpool" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "postgresql-cluster.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.pgpool.securityContext.gid }}
+      imagePullSecrets: 
+        {{- toYaml .Values.pgpool.imagePullSecrets | nindent 8 }}
+      volumes:
+      - name: pgpool-admin-password
+        secret:
+          secretName: {{ include "postgresql-cluster.pgpoolAdminPassword.secretName" . }}
+          defaultMode: 0640
+      - name: monitor-password
+        secret:
+          secretName: {{ include "postgresql-cluster.monitorPassword.secretName" . }}
+          defaultMode: 0640
+      - name: user-passwords
+        secret:
+          secretName: {{ include "postgresql-cluster.userPasswords.secretName" . }}
+          defaultMode: 0640
+      - name: tls
+        secret:
+          secretName: {{ include "postgresql-cluster.tls.secretName" . }} 
+          defaultMode: 0640
+      - name: scripts
+        configMap:
+          name: {{ .Release.Name }}-scripts
+          defaultMode: 0774
+          items:
+          - key: wait-for-host.sh
+            path: wait-for-host.sh
+          - key: check-status-of-primary-node.sh
+            path: check-status-of-primary-node.sh
+      initContainers: 
+      - name: wait-for-backend
+        image: busybox:1
+        imagePullPolicy: IfNotPresent
+        command:
+        - /opt/wait-for-host.sh
+        - --timeout
+        - '60'
+        - {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceName }}
+        {{- range $i := (until (int .Values.postgres.replicas)) }}
+        - {{ printf "%s-standby-%d.%s" $.Release.Name $i $postgresServiceName }}
+        {{- end }}{{/* range */}}
+        volumeMounts:
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+      containers:
+      - image: {{ .Values.pgpool.image }}
+        imagePullPolicy: IfNotPresent
+        name: pgpool
+        env:
+        - name: PGPOOL_ADMIN_PASSWORD_FILE
+          value: /secrets/pgpool-admin-password/password
+        - name: MONITOR_PASSWORD_FILE
+          value: /secrets/monitor-password/password
+        - name: USER_PASSWORDS_DIR
+          value: /secrets/users
+        - name: TLS_KEY_FILE
+          value: /certs/tls.key
+        - name: TLS_CERT_FILE
+          value: /certs/tls.crt
+        - name: BACKEND_0_HOST
+          value: {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceName }}
+        - name: BACKEND_0_WEIGHT
+          value: '1'
+        - name: BACKEND_0_NAME
+          value: server0
+        {{- range $i := (until (int .Values.postgres.replicas)) }}
+        - name: {{ printf "BACKEND_%d_HOST" ($i| add1) }}
+          value: {{ printf "%s-standby-%d.%s" $.Release.Name $i $postgresServiceName }}
+        - name: {{ printf "BACKEND_%d_WEIGHT" ($i| add1) }}
+          value: '1'
+        - name: {{ printf "BACKEND_%d_NAME" ($i| add1) }}
+          value: {{ printf "server%d" ($i| add1) }}
+        {{- end }}{{/* range */}}
+        volumeMounts:
+        - name: pgpool-admin-password
+          mountPath: /secrets/pgpool-admin-password
+          readOnly: true
+        - name: monitor-password
+          mountPath: /secrets/monitor-password
+          readOnly: true
+        - name: user-passwords
+          mountPath: /secrets/users
+          readOnly: true
+        - name: tls
+          mountPath: /certs
+          readOnly: true
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+        ports:
+        - containerPort: 5433
+        readinessProbe:
+          exec:
+            command:
+            - /opt/check-status-of-primary-node.sh
+          initialDelaySeconds: 3
+        terminationMessagePolicy: FallbackToLogsOnError 
+        resources:
+          {{- toYaml .Values.pgpool.resources | nindent 10 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+

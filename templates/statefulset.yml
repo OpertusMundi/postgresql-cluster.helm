@@ -1,5 +1,9 @@
 # vim: set filetype=helm: 
 
+{{- $commandArgs := list "postgres" "-c" "config_file=$(CONFIG_FILE)" -}}
+{{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
+{{- $masterHost := printf "%s-master-0.%s" .Release.Name (include "postgresql-cluster.postgres.serviceName" .) -}}
+
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -9,7 +13,7 @@ metadata:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  serviceName: {{ .Release.Name }}-master
+  serviceName: {{ include "postgresql-cluster.postgres.serviceName" . }}
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
@@ -72,21 +76,20 @@ spec:
           defaultMode: 0640
       - name: tls
         secret:
-          secretName: {{ include "postgresql-cluster.postgres.tls.secretName" . }} 
+          secretName: {{ include "postgresql-cluster.tls.secretName" . }} 
           defaultMode: 0640
       - name: config
         configMap:
           name: {{ .Release.Name }}-config
-      - name: init-scripts
+      - name: db-init-scripts
         configMap:
-          name: {{ .Release.Name }}-init-scripts
+          name: {{ .Release.Name }}-db-init-scripts
           defaultMode: 0774
       containers:
-      - name: {{ .Release.Name }}-master
+      - name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
-        args: 
-          {{- include "postgresql-cluster.postgres.command" .Values.postgres.config | nindent 10 }}
+        args: {{- toYaml $commandArgs | nindent 10 }}
         env:
         - name: CONFIG_FILE
           value: /etc/postgresql/postgresql.conf
@@ -131,7 +134,7 @@ spec:
         - name: config
           mountPath: /etc/postgresql
           readOnly: true
-        - name: init-scripts
+        - name: db-init-scripts
           mountPath: /docker-entrypoint-initdb.d 
           readOnly: true
         ports:
@@ -140,8 +143,7 @@ spec:
         livenessProbe: null
         readinessProbe:
           exec:
-            command: 
-              {{- include "postgresql-cluster.postgres.readinessCommand" . | nindent 14 }}
+            command: {{- toYaml $readinessProbeCommand | nindent 14 }} 
           initialDelaySeconds: 3
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
@@ -161,7 +163,7 @@ metadata:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.postgres.replicas }}
-  serviceName: {{ .Release.Name }}-standby
+  serviceName: {{ include "postgresql-cluster.postgres.serviceName" . }}
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}
@@ -206,44 +208,61 @@ spec:
           defaultMode: 0640
       - name: tls
         secret:
-          secretName: {{ include "postgresql-cluster.postgres.tls.secretName" . }} 
+          secretName: {{ include "postgresql-cluster.tls.secretName" . }} 
           defaultMode: 0640
       - name: config
         configMap:
           name: {{ .Release.Name }}-config
-      - name: basebackup-scripts
+      - name: scripts
         configMap:
-          name: {{ .Release.Name }}-basebackup-scripts
+          name: {{ .Release.Name }}-scripts
           defaultMode: 0774
+          items:
+          - key: wait-for-host.sh
+            path: wait-for-host.sh
+          - key: basebackup.sh
+            path: basebackup.sh
       initContainers:
-      - name: {{ .Release.Name }}-basebackup
+      - name: wait-for-master
+        image: busybox:1
+        imagePullPolicy: IfNotPresent
+        command:
+        - /opt/wait-for-host.sh
+        - --timeout 
+        - '30'
+        - {{ $masterHost }}
+        volumeMounts:
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+      - name: basebackup
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
-        command: [ 'su-exec', 'postgres', '/opt/basebackup.sh' ]
-        env:
-        - name: REPLICATION_USER
-          value: replicator
-        - name: REPLICATION_PASSWORD_FILE
-          value: /secrets/replication-password/password
-        - name: ARCHIVE_FROM_DIR
-          value: /var/backups/postgresql/archive-master
-        - name: MASTER_DB_HOST
-          value: {{ .Release.Name }}-master
+        command: 
+        - su-exec
+        - postgres
+        - /opt/basebackup.sh
+        - --user
+        - replicator
+        - --password-file
+        - /secrets/replication-password/password
+        - --archive-dir
+        - /var/backups/postgresql/archive-master
+        - {{ $masterHost }}
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
         - name: replication-password
           mountPath: /secrets/replication-password
           readOnly: true
-        - name: basebackup-scripts
+        - name: scripts
           mountPath: /opt/
           readOnly: true
       containers: 
-      - name: {{ .Release.Name }}-standby
+      - name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
-        args: 
-          {{- include "postgresql-cluster.postgres.command" .Values.postgres.config | nindent 10 }}
+        args: {{- toYaml $commandArgs | nindent 10 }}
         env:
         - name: CONFIG_FILE
           value: /etc/postgresql/postgresql.conf
@@ -255,8 +274,6 @@ spec:
           value: /certs/tls.key
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
-        - name: MASTER_DB_HOST
-          value: {{ .Release.Name }}-master
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -278,8 +295,7 @@ spec:
         livenessProbe: null
         readinessProbe:
           exec:
-            command: 
-              {{- include "postgresql-cluster.postgres.readinessCommand" . | nindent 14 }}
+            command: {{- toYaml $readinessProbeCommand | nindent 14 }} 
           initialDelaySeconds: 3
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:

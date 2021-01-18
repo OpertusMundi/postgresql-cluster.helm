@@ -58,6 +58,12 @@ role-in-database-cluster: master
 role-in-database-cluster: standby
 {{- end }}
 
+{{/* Selector labels for PgPool Pod(s) */}}
+{{- define "postgresql-cluster.selectorLabelsForPgpool" -}}
+{{ include "postgresql-cluster.selectorLabels" . }}
+role-in-database-cluster: pgpool
+{{- end }}
+
 {{/* Create the name of the service account to use */}}
 {{- define "postgresql-cluster.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
@@ -79,26 +85,22 @@ role-in-database-cluster: standby
 {{ .Values.monitorPassword.secretName | default (printf "%s-monitor-password" .Release.Name) }}
 {{- end }}
 
+{{- define "postgresql-cluster.pgpoolAdminPassword.secretName" -}}
+{{ .Values.pgpoolAdminPassword.secretName | default (printf "%s-pgpool-admin-password" .Release.Name) }}
+{{- end }}
+
 {{- define "postgresql-cluster.userPasswords.secretName" -}}
 {{ .Values.userPasswords.secretName | default (printf "%s-user-passwords" .Release.Name) }}
 {{- end }}
 
-{{- define "postgresql-cluster.postgres.tls.secretName" -}}
-{{ .Values.postgres.tls.secretName | default (printf "%s-postgres-tls" .Release.Name) }} 
+{{- define "postgresql-cluster.tls.secretName" -}}
+{{ .Values.tls.secretName | default (printf "%s-postgres-tls" .Release.Name) }} 
 {{- end }}
 
-{{- define "postgresql-cluster.postgres.command" -}}
-[ 
-  'postgres', '-c', 'config_file=$(CONFIG_FILE)',
-  '-c', 'ssl_key_file=$(TLS_KEY_FILE)', '-c', 'ssl_cert_file=$(TLS_CERT_FILE)',
-  '-c', 'max_connections={{ .maxNumberOfConnections | default 128 }}' 
-]
+{{- define "postgresql-cluster.postgres.serviceName" -}}
+{{ .Values.postgres.serviceName | default .Release.Name }} 
 {{- end }}
 
-{{- define "postgresql-cluster.postgres.readinessCommand" -}}
-[
-  'su-exec', 'postgres',
-  'pg_isready', '-h', 'localhost'
-]
+{{- define "postgresql-cluster.pgpool.serviceName" -}}
+{{ .Values.postgres.serviceName | default (printf "%s-pgpool" .Release.Name) }} 
 {{- end }}
-

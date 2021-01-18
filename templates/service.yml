@@ -1,11 +1,41 @@
 # vim: set filetype=helm: 
 
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postgresql-cluster.pgpool.serviceName" . }}
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  selector: 
+    {{- include "postgresql-cluster.selectorLabelsForPgpool" . | nindent 4 }} 
+  ports:
+  - port: 5433
+    targetPort: 5433
+
+---
+# A headless service that governs the subdomain of the statefulsets (both master and standby)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postgresql-cluster.postgres.serviceName" . }}
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  selector: 
+    {{- include "postgresql-cluster.selectorLabels" . | nindent 4 }} 
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+
+---
 # A headless service for the master instance of the database cluster
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-master
+  name: {{ include "postgresql-cluster.postgres.serviceName" . }}-master
   labels:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
@@ -13,8 +43,7 @@ spec:
     {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 4 }} 
   clusterIP: None
   ports:
-  - protocol: TCP
-    port: 5432
+  - port: 5432
     targetPort: 5432
 
 
@@ -23,7 +52,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-standby
+  name: {{ include "postgresql-cluster.postgres.serviceName" . }}-standby
   labels:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
@@ -31,7 +60,6 @@ spec:
     {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 4 }} 
   clusterIP: None
   ports:
-  - protocol: TCP
-    port: 5432
+  - port: 5432
     targetPort: 5432
 

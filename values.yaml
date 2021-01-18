@@ -1,5 +1,4 @@
 
-
 nameOverride: ""
 fullnameOverride: ""
 
@@ -23,22 +22,25 @@ replicationPassword:
 monitorPassword:
   secretName:
 
+pgpoolAdminPassword:
+  secretName:
+
 userPasswords:
   secretName:
+
+tls:
+  secretName:  
 
 postgres:
   image: 'postgres:10.14-alpine'
   #image: 'postgis/postgis:10-3.0-alpine'
-  
+  # The name of the headless service governing the network id of stateful sets
+  serviceName:
   securityContext:
     # The id of the user/group running postgres
     # (it depends on the image used, e.g. is different in alpine/ubuntu variants) 
     uid: 70
     gid: 70 
-  
-  tls:
-    secretName: 
-  
   volumeClaims:
     dataDir:
       size: 256Mi
@@ -48,10 +50,6 @@ postgres:
       size: 256Mi
       storageClassName: nas-1
       matchLabels: {}
-
-  config:
-    maxNumberOfConnections: 150
-  
   # resources for each server (master or standby)
   resources:
     limits:
@@ -60,18 +58,26 @@ postgres:
     requests:
        cpu: 1.0
        memory: 256Mi
-
   # the number of standy servers to start
   replicas: 2
    
   
 pgpool:
-  #image: ''
-  resources: {}
-    #limits:
-    #  cpu: 100m
-    #  memory: 128Mi
-    #requests:
-    #  cpu: 100m
-    #  memory: 128Mi
-
+  image: 'localhost:5000/pgpool:4.1-alpine'
+  imagePullSecrets: 
+    []
+  securityContext:
+    # The id of the user/group running pgpool (user "postgres")
+    uid: 70
+    gid: 70 
+  serviceName:
+  resources:
+    limits:
+      cpu: 1.0
+      memory: 128Mi
+    requests:
+      cpu: 0.5
+      memory: 128Mi
+  # the number of PgPool servers to start
+  replicas: 1
+ 

@@ -12,16 +12,16 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-init-scripts
+  name: {{ .Release.Name }}-db-init-scripts
 data:
-  {{- (.Files.Glob "files/init-scripts/*.sh").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "files/db-init-scripts/*.sh").AsConfig | nindent 2 }}
 
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-basebackup-scripts
+  name: {{ .Release.Name }}-scripts
 data:
-  {{- (.Files.Glob "files/basebackup.sh").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "files/scripts/*.sh").AsConfig | nindent 2 }}
 

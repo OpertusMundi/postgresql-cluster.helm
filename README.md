@@ -22,13 +22,5 @@ For password-related secrets, if not mentioned otherwise, we expect a single ite
 
     kubectl create secret generic some-postgres-password --from-file=password=secrets/postgres-password
 
-The required values are described below:
+All values are documented inside `values.yml`.
 
- * `postgresPassword.secretName`: The name of a secret holding the password of `postgres` user (the administrator) for the database cluster
- * `replicationPassword.secretName`: The name of a secret holding the password of the replication-charged user (namely `replicator`) for the database cluster
- * `monitorPassword.secretName`: The name of a secret holding the password of a monitoring-charged user (namely `monitor`, member of `pg_monitor` group) for the database cluster
- * `pgpoolAdminPassword.secretName`: The name of a secret holding the password of `pgpool` user (the administrator) for PgPool
- * `userPasswords.secretName`:  The name of a secret holding a list of items of user credentials. Each item is named with the username and contains the password.
- * `pgpool.image`: The tag of the Docker image for PgPool (for example, the one provided at step `1.1`)
- * `pgpool.imagePullSecrets`: The name of a secret holding the authorization needed for fetching the PgPool image from the Docker registry. This value may be ommited in the case of a public registry. See also `kubectl explain pod.spec.imagePullSecrets`.
-   

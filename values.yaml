@@ -11,23 +11,31 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# A map of annotations to apply to all Pods in the database cluster
 podAnnotations: {}
 
+# The secret holding the password of `postgres` user (the administrator)
 postgresPassword:
   secretName:
 
+# The secret holding the password of the replication-charged user (named as `replicator`)
 replicationPassword:
   secretName:
 
+# The secret holding the password of a monitoring-charged user (named as `monitor`, member of `pg_monitor` group)
 monitorPassword:
   secretName:
 
+# The secret holding the password of `pgpool` user (the administrator) for PgPool 
 pgpoolAdminPassword:
   secretName:
 
+# The secret holding a list of items of user credentials (used by PgPool to authenticate clients).
+# Each item is named with the username and contains the password. 
 userPasswords:
   secretName:
 
+# The secret holding the TLS key/certificate for PostgreSQL/PgPool servers
 tls:
   secretName:  
 
@@ -44,12 +52,17 @@ postgres:
   volumeClaims:
     dataDir:
       size: 256Mi
+      # define the storage class for data directories
       storageClassName: local-1
-      matchLabels: {}
+      matchLabels: 
+        {}
     archiveDir: 
       size: 256Mi
+      # define the storage class for archive directory
+      # note: the corresponding PVC will require ReadWriteMany access mode for the PV
       storageClassName: nas-1
-      matchLabels: {}
+      matchLabels: 
+        {}
   # resources for each server (master or standby)
   resources:
     limits:
@@ -58,13 +71,13 @@ postgres:
     requests:
        cpu: 1.0
        memory: 256Mi
-  # the number of standy servers to start
+  # the number (>= 0) of standy servers to start
   replicas: 2
    
   
 pgpool:
   image: 'localhost:5000/pgpool:4.1-alpine'
-  imagePullSecrets: 
+  imagePullSecrets:
     []
   securityContext:
     # The id of the user/group running pgpool (user "postgres")
@@ -78,6 +91,6 @@ pgpool:
     requests:
       cpu: 0.5
       memory: 128Mi
-  # the number of PgPool servers to start
+  # the number (>= 0) of PgPool servers to start
   replicas: 1
  

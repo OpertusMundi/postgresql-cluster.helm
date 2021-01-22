@@ -71,9 +71,12 @@ postgres:
     requests:
        cpu: 1.0
        memory: 256Mi
+  readinessProbe:
+    periodSeconds: 20
+    initialDelaySeconds: 3
   # the number (>= 0) of standy servers to start
   replicas: 2
-   
+
   
 pgpool:
   image: 'localhost:5000/pgpool:4.1-alpine'
@@ -91,6 +94,9 @@ pgpool:
     requests:
       cpu: 0.5
       memory: 128Mi
+  readinessProbe:
+    periodSeconds: 30
+    initialDelaySeconds: 3
   # the number (>= 0) of PgPool servers to start
   replicas: 1
  

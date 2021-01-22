@@ -144,7 +144,8 @@ spec:
         readinessProbe:
           exec:
             command: {{- toYaml $readinessProbeCommand | nindent 14 }} 
-          initialDelaySeconds: 3
+          initialDelaySeconds: {{ .Values.postgres.readinessProbe.initialDelaySeconds | default 3 }}
+          periodSeconds: {{ .Values.postgres.readinessProbe.periodSeconds | default 20 }}
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
@@ -296,7 +297,8 @@ spec:
         readinessProbe:
           exec:
             command: {{- toYaml $readinessProbeCommand | nindent 14 }} 
-          initialDelaySeconds: 3
+          initialDelaySeconds: {{ .Values.postgres.readinessProbe.initialDelaySeconds | default 3 }}
+          periodSeconds: {{ .Values.postgres.readinessProbe.periodSeconds | default 20 }}
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}

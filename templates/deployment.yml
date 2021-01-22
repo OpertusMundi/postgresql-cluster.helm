@@ -120,7 +120,8 @@ spec:
           exec:
             command:
             - /opt/check-status-of-primary-node.sh
-          initialDelaySeconds: 3
+          initialDelaySeconds: {{ .Values.pgpool.readinessProbe.initialDelaySeconds | default 3 }}
+          periodSeconds: {{  .Values.pgpool.readinessProbe.periodSeconds | default 30 }}
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.pgpool.resources | nindent 10 }}

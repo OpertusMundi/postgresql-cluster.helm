@@ -19,7 +19,7 @@ spec:
       {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
   {{- with .Values.postgres.volumeClaims }}
   volumeClaimTemplates:
-  # PVC for data directory
+  # PVC template for data directory
   - metadata:
       name: data
     spec:
@@ -31,8 +31,10 @@ spec:
           storage: {{ .dataDir.size }}
       selector:
         matchLabels:
-          {{- toYaml .dataDir.matchLabels | nindent 10 }}
-  # PVC for archive directory
+          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
+          backend-role: master
+          {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
+  # PVC template for archive directory
   - metadata:
       name: archive
     spec:
@@ -44,7 +46,8 @@ spec:
           storage: {{ .archiveDir.size }}
       selector:
         matchLabels:
-          {{- toYaml .archiveDir.matchLabels | nindent 10 }}
+          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
+          {{- if .archiveDir.extraMatchLabels }}{{ toYaml .archiveDir.extraMatchLabels | nindent 10 }}{{- end }}
   {{- end }}
   # Pod template
   template:
@@ -170,7 +173,7 @@ spec:
       {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}
   {{- with .Values.postgres.volumeClaims }}
   volumeClaimTemplates:
-  # PVC for data directory
+  # PVC template for data directory
   - metadata:
       name: data
     spec:
@@ -182,7 +185,9 @@ spec:
           storage: {{ .dataDir.size }}
       selector:
         matchLabels:
-          {{- toYaml .dataDir.matchLabels | nindent 10 }}
+          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
+          backend-role: standby
+          {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
   {{- end }}
   # Pod template
   template:

@@ -24,7 +24,7 @@ metadata:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
   selector: 
-    {{- include "postgresql-cluster.selectorLabels" . | nindent 4 }} 
+    {{- include "postgresql-cluster.selectorLabelsForBackend" . | nindent 4 }} 
   clusterIP: None
   ports:
   - port: 5432

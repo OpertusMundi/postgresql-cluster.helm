@@ -3,6 +3,7 @@
 # negation (prefixed with !). Only one pattern per line.
 
 postgresql.conf.example
+values-local.yaml
 
 temp/
 data/

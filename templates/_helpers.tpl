@@ -46,22 +46,28 @@ app.kubernetes.io/name: {{ include "postgresql-cluster.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+{{/* Selector labels for master/standby database Pods (backend) */}}
+{{- define "postgresql-cluster.selectorLabelsForBackend" -}}
+{{ include "postgresql-cluster.selectorLabels" . }}
+tier-in-database-cluster: backend
+{{- end }}
+
 {{/* Selector labels for master Pod */}}
 {{- define "postgresql-cluster.selectorLabelsForMaster" -}}
-{{ include "postgresql-cluster.selectorLabels" . }}
-role-in-database-cluster: master
+{{ include "postgresql-cluster.selectorLabelsForBackend" . }}
+backend-role: master
 {{- end }}
 
 {{/* Selector labels for standby Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForStandby" -}}
-{{ include "postgresql-cluster.selectorLabels" . }}
-role-in-database-cluster: standby
+{{ include "postgresql-cluster.selectorLabelsForBackend" . }}
+backend-role: standby
 {{- end }}
 
 {{/* Selector labels for PgPool Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForPgpool" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
-role-in-database-cluster: pgpool
+tier-in-database-cluster: proxy
 {{- end }}
 
 {{/* Create the name of the service account to use */}}

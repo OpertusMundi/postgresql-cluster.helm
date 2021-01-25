@@ -54,14 +54,14 @@ postgres:
       size: 256Mi
       # define the storage class for data directories
       storageClassName: local-1
-      matchLabels: 
+      extraMatchLabels:
         {}
     archiveDir: 
       size: 256Mi
       # define the storage class for archive directory
       # note: the corresponding PVC will require ReadWriteMany access mode for the PV
-      storageClassName: nas-1
-      matchLabels: 
+      storageClassName: nfs-1
+      extraMatchLabels: 
         {}
   # resources for each server (master or standby)
   resources:

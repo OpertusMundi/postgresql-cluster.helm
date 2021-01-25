@@ -2,8 +2,18 @@
 set -e
 #set -x
 
+test -d "${PGDATA}"
+
 if [ -n "$(ls -A ${PGDATA})" ]; then
     echo "The target directory (${PGDATA}) is not empty. Nothing to do." 1>&2
+    if ! [ -f "${PGDATA}/PG_VERSION" ]; then
+        echo "The target directory (${PGDATA}) does not seem like a PostgreSQL data directory!" 1>&2
+        exit 1
+    fi
+    if ! [ -f "${PGDATA}/recovery.conf" ]; then
+        echo "The data directory does not contain recovery.conf!" 1>&2
+        exit 1
+    fi
     exit 0
 fi
 
@@ -54,11 +64,11 @@ pg_basebackup -v --checkpoint=fast -h ${master_host} -U ${replication_user} -D $
 
 # Generate recovery.conf
 
-cat <<EOD > ${PGDATA}/recovery.conf
+cat <<EOD > "${PGDATA}/recovery.conf"
 standby_mode = 'on'
 primary_conninfo = 'user=${replication_user} password=''${replication_password}'' host=${master_host} port=5432 sslmode=prefer sslcompression=0 krbsrvname=postgres target_session_attrs=any'
 trigger_file = 'trigger-failover'
 restore_command = 'test ! -f ${archive_dir}/%f || cp -v ${archive_dir}/%f %p'
 EOD
 
-chmod 0660 ${PGDATA}/recovery.conf
+chmod 0660 "${PGDATA}/recovery.conf"

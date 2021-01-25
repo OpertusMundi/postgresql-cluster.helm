@@ -51,7 +51,8 @@ kind: PersistentVolume
 metadata:
   name: postgres-c1-data-ac30a47d44f2
   labels:
-    database-cluster: postgres-c1
+    app.kubernetes.io/name: postgresql-cluster
+    app.kubernetes.io/instance: postgres-c1
 spec:
   storageClassName: local-1
   accessModes:
@@ -77,7 +78,7 @@ spec:
 
 #### 1.3.b. Provide a PV matching labels
 
-The labels requested for the PVC for the data directory for the master (similar for standby):
+The labels requested for the PVC for the data directory for the master (and similar for standby):
 ```yaml
 app.kubernetes.io/name: postgresql-cluster
 app.kubernetes.io/instance: {{releaseName}}
@@ -85,7 +86,7 @@ backend-role: master
 ```
 
 The labels requested for the PVC for the archive directory for the master:
-```
+```yaml
 app.kubernetes.io/name: postgresql-cluster
 app.kubernetes.io/instance: {{releaseName}}
 ```

@@ -94,6 +94,9 @@ spec:
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $commandArgs | nindent 10 }}
         env:
+        - name: POSTGRES_INITDB_ARGS
+          value: >-
+            --data-checksums
         - name: CONFIG_FILE
           value: /etc/postgresql/postgresql.conf
         - name: POSTGRES_PASSWORD_FILE

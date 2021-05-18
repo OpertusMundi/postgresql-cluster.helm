@@ -86,7 +86,8 @@ pgpool:
     # The id of the user/group running pgpool (user "postgres")
     uid: 70
     gid: 70 
-  serviceName:
+  serviceName: ~
+  numProcs: 32
   resources:
     limits:
       cpu: 1.0

@@ -86,6 +86,8 @@ spec:
           value: /certs/tls.crt
         - name: NUM_PROCS
           value: "{{ .Values.pgpool.numProcs }}"
+        - name: POOL_SIZE
+          value: "{{ .Values.pgpool.poolSize }}"
         - name: BACKEND_0_HOST
           value: {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceName }}
         - name: BACKEND_0_WEIGHT

@@ -87,7 +87,13 @@ pgpool:
     uid: 70
     gid: 70 
   serviceName: ~
+  # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN
+  # see https://www.pgpool.net/mediawiki/index.php/Relationship_between_max_pool,_num_init_children,_and_max_connections
+  # TODO: check (a pre-install hook or a test?) that poolSize * numProcs <= maxNumberOfConnections - 4
+  # number of children processes to spawn (see num_init_children of PgPool configuration)
   numProcs: 32
+  # size of per-child connection pool (see max_pool of PgPool configuration)
+  poolSize: 4
   resources:
     limits:
       cpu: 1.0

@@ -75,6 +75,7 @@ monitor_password="$(cat ${MONITOR_PASSWORD_FILE})"
 
 sed \
     -e "s/\${NUM_PROCS}/${NUM_PROCS:-32}/" \
+    -e "s/\${POOL_SIZE}/${POOL_SIZE:-4}/" \
     -e "s~\${POOL_PASSWD_FILE}~${POOL_PASSWD_FILE}~" \
     -e "s~^ssl[[:blank:]]*=[[:blank:]]*off~ssl = on~" \
     -e "s~\${TLS_KEY_FILE}~${TLS_KEY_FILE}~" \

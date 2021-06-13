@@ -15,6 +15,7 @@ ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
     TLS_KEY_FILE="/certs/pgpool.key" \
     TLS_CERT_FILE="/certs/pgpool.crt" \
     NUM_PROCS="32" \
+    POOL_SIZE="4" \
     BACKEND_0_HOST="localhost" \
     BACKEND_0_PORT="5432" \
     BACKEND_0_WEIGHT="1" \

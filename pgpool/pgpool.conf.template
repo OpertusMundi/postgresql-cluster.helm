@@ -115,7 +115,7 @@ ssl_dh_params_file = ''
 num_init_children = ${NUM_PROCS}
                                    # Number of concurrent sessions allowed
                                    # (change requires restart)
-max_pool = 4
+max_pool = ${POOL_SIZE}
                                    # Number of connection pool caches per connection
                                    # (change requires restart)
 

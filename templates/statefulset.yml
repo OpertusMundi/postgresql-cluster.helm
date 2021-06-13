@@ -1,6 +1,17 @@
 # vim: set filetype=helm: 
 
-{{- $commandArgs := list "postgres" "-c" "config_file=$(CONFIG_FILE)" -}}
+{{- $command := list "postgres" "-c" "config_file=$(CONFIG_FILE)" -}}
+{{/* https://stackoverflow.com/a/66548354/1943126 */}}
+{{- if .Values.postgres.maxNumConnections }}
+{{- $command = append $command (printf "--max_connections=%d" (int .Values.postgres.maxNumConnections)) -}}
+{{- end }}{{/* if .maxNumConnections */}}
+{{- if .Values.postgres.sharedBuffersSize }}
+{{- $command = append $command (printf "--shared_buffers=%s" .Values.postgres.sharedBuffersSize) }}
+{{- end }}{{/* if .sharedBuffersSize */}}
+{{- if .Values.postgres.workMemory }}
+{{- $command = append $command (printf "--work_mem=%s" .Values.postgres.workMemory) -}}
+{{- end }}{{/* if .workMemory */}}
+
 {{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
 {{- $masterHost := printf "%s-master-0.%s" .Release.Name (include "postgresql-cluster.postgres.serviceName" .) -}}
 
@@ -92,7 +103,7 @@ spec:
       - name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
-        args: {{- toYaml $commandArgs | nindent 10 }}
+        args: {{- toYaml $command | nindent 10 }}
         env:
         - name: POSTGRES_INITDB_ARGS
           value: >-
@@ -271,7 +282,7 @@ spec:
       - name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
-        args: {{- toYaml $commandArgs | nindent 10 }}
+        args: {{- toYaml $command | nindent 10 }}
         env:
         - name: CONFIG_FILE
           value: /etc/postgresql/postgresql.conf

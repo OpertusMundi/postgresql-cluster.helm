@@ -63,6 +63,12 @@ postgres:
       storageClassName: nfs-1
       extraMatchLabels: 
         {}
+  # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS
+  #maxNumConnections: 128
+  # (shared_buffers)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
+  #sharedBuffersSize: '128MB'
+  # (work_mem)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
+  #workMemory: '6MB'
   # resources for each server (master or standby)
   resources:
     limits:
@@ -74,7 +80,7 @@ postgres:
   readinessProbe:
     periodSeconds: 20
     initialDelaySeconds: 3
-  # the number (>= 0) of standy servers to start
+  # the number (>= 0) of standby servers to start
   replicas: 2
 
   
@@ -89,7 +95,7 @@ pgpool:
   serviceName: ~
   # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN
   # see https://www.pgpool.net/mediawiki/index.php/Relationship_between_max_pool,_num_init_children,_and_max_connections
-  # TODO: check (a pre-install hook or a test?) that poolSize * numProcs <= maxNumberOfConnections - 4
+  # TODO: check (a pre-install hook or a test?) that: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4)
   # number of children processes to spawn (see num_init_children of PgPool configuration)
   numProcs: 32
   # size of per-child connection pool (see max_pool of PgPool configuration)

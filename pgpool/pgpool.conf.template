@@ -17,6 +17,14 @@
 # take effect.
 #
 
+#------------------------------------------------------------------------------
+# BACKEND CLUSTERING MODE
+# Choose one of: 'streaming_replication', 'native_replication',
+#	'logical_replication', 'slony', 'raw' or 'snapshot_isolation'
+# (change requires restart)
+#------------------------------------------------------------------------------
+
+backend_clustering_mode = 'streaming_replication'
 
 #------------------------------------------------------------------------------
 # CONNECTIONS
@@ -25,28 +33,44 @@
 # - pgpool Connection Settings -
 
 listen_addresses = '*'
+                                   # Host name or IP address to listen on:
+                                   # '*' for all, '' for no TCP/IP connections
+                                   # (change requires restart)
 port = 5433
+                                   # Port number
+                                   # (change requires restart)
 socket_dir = '/var/run/pgpool'
                                    # Unix domain socket path
+                                   # The Debian package defaults to
+                                   # /var/run/postgresql
+                                   # (change requires restart)
 listen_backlog_multiplier = 2
                                    # Set the backlog parameter of listen(2) to
                                    # num_init_children * listen_backlog_multiplier.
+                                   # (change requires restart)
 serialize_accept = off
                                    # whether to serialize accept() call to avoid thundering herd problem
+                                   # (change requires restart)
 reserved_connections = 0
                                    # Number of reserved connections.
                                    # Pgpool-II does not accept connections if over
                                    # num_init_chidlren - reserved_connections.
+
 
 # - pgpool Communication Manager Connection Settings -
 
 pcp_listen_addresses = ''
                                    # Host name or IP address for pcp process to listen on:
                                    # '*' for all, '' for no TCP/IP connections
+                                   # (change requires restart)
 pcp_port = 9898
                                    # Port number for pcp
+                                   # (change requires restart)
 pcp_socket_dir = '/var/run/pgpool'
                                    # Unix domain socket path for pcp
+                                   # The Debian package defaults to
+                                   # /var/run/postgresql
+                                   # (change requires restart)
 
 # - Backend Connection Settings -
 
@@ -59,10 +83,11 @@ pcp_socket_dir = '/var/run/pgpool'
 #backend_data_directory0 = '/var/lib/pgsql/data'
                                    # Data directory for backend 0
 #backend_flag0 = 'ALLOW_TO_FAILOVER'
-                                   # Controls various backend behavior: ALLOW_TO_FAILOVER, DISALLOW_TO_FAILOVER or ALWAYS_MASTER
+                                   # Controls various backend behavior:
+                                   # ALLOW_TO_FAILOVER, DISALLOW_TO_FAILOVER
+                                   # or ALWAYS_PRIMARY
 #backend_application_name0 = 'server0'
                                    # walsender's application_name, used for "show pool_nodes" command
-
 
 # - Authentication -
 
@@ -71,7 +96,8 @@ enable_pool_hba = on
 pool_passwd = '${POOL_PASSWD_FILE}'
                                    # File name of pool_passwd for md5 authentication.
                                    # "" disables pool_passwd.
-authentication_timeout = 60
+                                   # (change requires restart)
+authentication_timeout = 1min
                                    # Delay in seconds to complete client authentication
                                    # 0 means no timeout.
 
@@ -85,26 +111,40 @@ allow_clear_text_frontend_auth = off
 
 ssl = on
                                    # Enable SSL support
+                                   # (change requires restart)
 ssl_key = '${TLS_KEY_FILE}'
                                    # Path to the SSL private key file
+                                   # (change requires restart)
 ssl_cert = '${TLS_CERT_FILE}'
                                    # Path to the SSL public certificate file
+                                   # (change requires restart)
 #ssl_ca_cert = ''
-                                   # Path to a single PEM format file
-                                   # containing CA root certificate(s)
+                                   # Single PEM format file containing
+                                   # CA root certificate(s)
+                                   # (change requires restart)
 #ssl_ca_cert_dir = ''
                                    # Directory containing CA root certificate(s)
+                                   # (change requires restart)
+#ssl_crl_file = ''
+                                   # SSL certificate revocation list file
+                                   # (change requires restart)
 
 ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
                                    # Allowed SSL ciphers
+                                   # (change requires restart)
 ssl_prefer_server_ciphers = off
                                    # Use server's SSL cipher preferences,
                                    # rather than the client's
+                                   # (change requires restart)
 ssl_ecdh_curve = 'prime256v1'
                                    # Name of the curve to use in ECDH key exchange
 ssl_dh_params_file = ''
                                    # Name of the file containing Diffie-Hellman parameters used
                                    # for so-called ephemeral DH family of SSL cipher.
+#ssl_passphrase_command=''
+                                   # Sets an external command to be invoked when a passphrase
+                                   # for decrypting an SSL file needs to be obtained
+                                   # (change requires restart)
 
 #------------------------------------------------------------------------------
 # POOLS
@@ -121,7 +161,7 @@ max_pool = ${POOL_SIZE}
 
 # - Life time -
 
-child_life_time = 600
+child_life_time = 5min
                                    # Pool exits after being idle for this many seconds
 child_max_connections = 0
                                    # Pool exits after receiving that many connections
@@ -150,9 +190,11 @@ log_destination = 'stderr'
 
 log_line_prefix = '%t: pid %p: '   # printf-style string to output at beginning of each log line.
 
-log_connections = off
+log_connections = on
                                    # Log connections
-log_hostname = off
+log_disconnections = on
+                                   # Log disconnections
+log_hostname = on
                                    # Hostname will be shown in ps status
                                    # and in logs if connections are logged
 log_statement = off
@@ -162,7 +204,7 @@ log_per_node_statement = off
                                    # with node and backend informations
 log_client_messages = off
                                    # Log any client messages
-log_standby_delay = 'none'
+log_standby_delay = 'if_over_threshold'
                                    # Log standby delay
                                    # Valid values are combinations of always,
                                    # if_over_threshold, none
@@ -204,6 +246,37 @@ log_min_messages = info             # values in order of decreasing detail:
                                         #   fatal
                                         #   panic
 
+# This is used when logging to stderr:
+#logging_collector = off                # Enable capturing of stderr
+                                        # into log files.
+                                        # (change requires restart)
+
+# -- Only used if logging_collector is on ---
+
+#log_directory = '/tmp/pgpool_log'      # directory where log files are written,
+                                        # can be absolute
+#log_filename = 'pgpool-%Y-%m-%d_%H%M%S.log'
+                                        # log file name pattern,
+                                        # can include strftime() escapes
+
+#log_file_mode = 0600                   # creation mode for log files,
+                                        # begin with 0 to use octal notation
+
+#log_truncate_on_rotation = off         # If on, an existing log file with the
+                                        # same name as the new log file will be
+                                        # truncated rather than appended to.
+                                        # But such truncation only occurs on
+                                        # time-driven rotation, not on restarts
+                                        # or size-driven rotation.  Default is
+                                        # off, meaning append to existing files
+                                        # in all cases.
+
+#log_rotation_age = 1d                  # Automatic rotation of logfiles will
+                                        # happen after that (minutes)time.
+                                        # 0 disables time based rotation.
+#log_rotation_size = 10MB               # Automatic rotation of logfiles will
+                                        # happen after that much (KB) log output.
+                                        # 0 disables size based rotation.
 #------------------------------------------------------------------------------
 # FILE LOCATIONS
 #------------------------------------------------------------------------------
@@ -239,16 +312,13 @@ reset_query_list = 'ABORT; DISCARD ALL'
 # REPLICATION MODE
 #------------------------------------------------------------------------------
 
-replication_mode = off
-                                   # Activate replication mode
-                                   # (change requires restart)
 replicate_select = off
                                    # Replicate SELECT statements
                                    # when in replication mode
                                    # replicate_select is higher priority than
                                    # load_balance_mode.
 
-insert_lock = on
+insert_lock = off
                                    # Automatically locks a dummy row or a table
                                    # with INSERT statements to keep SERIAL data
                                    # consistency
@@ -284,16 +354,20 @@ load_balance_mode = on
                                    # (change requires restart)
 ignore_leading_white_space = on
                                    # Ignore leading white spaces of each query
-white_function_list = ''
+read_only_function_list = ''
                                    # Comma separated list of function names
                                    # that don't write to database
                                    # Regexp are accepted
-black_function_list = 'currval,lastval,nextval,setval'
+write_function_list = ''
                                    # Comma separated list of function names
                                    # that write to database
                                    # Regexp are accepted
+				   # If both read_only_function_list and write_function_list
+				   # is empty, function's volatile property is checked.
+				   # If it's volatile, the function is regarded as a
+				   # writing function.
 
-black_query_pattern_list = ''
+primary_routing_query_pattern_list = ''
                                    # Semicolon separated list of query patterns
                                    # that should be sent to primary node
                                    # Regexp are accepted
@@ -303,6 +377,7 @@ database_redirect_preference_list = ''
                                    # comma separated list of pairs of database and node id.
                                    # example: postgres:primary,mydb[0-4]:1,mydb[5-9]:2'
                                    # valid for streaming replicaton mode only.
+
 app_name_redirect_preference_list = ''
                                    # comma separated list of pairs of app name and node id.
                                    # example: 'psql:primary,myapp[0-4]:1,myapp[5-9]:standby'
@@ -316,32 +391,48 @@ allow_sql_comments = off
 disable_load_balance_on_write = 'transaction'
                                    # Load balance behavior when write query is issued
                                    # in an explicit transaction.
+                                   #
+                                   # Valid values:
+                                   #
+                                   # 'transaction' (default):
+                                   #     if a write query is issued, subsequent
+                                   #     read queries will not be load balanced
+                                   #     until the transaction ends.
+                                   #
+                                   # 'trans_transaction':
+                                   #     if a write query is issued, subsequent
+                                   #     read queries in an explicit transaction
+                                   #     will not be load balanced until the session ends.
+                                   #
+                                   # 'dml_adaptive':
+                                   #     Queries on the tables that have already been
+                                   #     modified within the current explicit transaction will
+                                   #     not be load balanced until the end of the transaction.
+                                   #
+                                   # 'always':
+                                   #     if a write query is issued, read queries will
+                                   #     not be load balanced until the session ends.
+                                   #
                                    # Note that any query not in an explicit transaction
                                    # is not affected by the parameter.
-                                   # 'transaction' (the default): if a write query is issued,
-                                   # subsequent read queries will not be load balanced
-                                   # until the transaction ends.
-                                   # 'trans_transaction': if a write query is issued,
-                                   # subsequent read queries in an explicit transaction
-                                   # will not be load balanced until the session ends.
-                                   # 'always': if a write query is issued, read queries will
-                                   # not be load balanced until the session ends.
+
+dml_adaptive_object_relationship_list= ''
+                                   # comma separated list of object pairs
+                                   # [object]:[dependent-object], to disable load balancing
+                                   # of dependent objects within the explicit transaction
+                                   # after WRITE statement is issued on (depending-on) object.
+                                   #
+                                   # example: 'tb_t1:tb_t2,insert_tb_f_func():tb_f,tb_v:my_view'
+                                   # Note: function name in this list must also be present in
+                                   # the write_function_list
+                                   # only valid for disable_load_balance_on_write = 'dml_adaptive'.
 
 statement_level_load_balance = off
                                    # Enables statement level load balancing
 
 #------------------------------------------------------------------------------
-# MASTER/SLAVE MODE
+# NATIVE REPLICATION MODE
 #------------------------------------------------------------------------------
-
-master_slave_mode = on
-                                   # Activate master/slave mode
-                                   # (change requires restart)
-master_slave_sub_mode = 'stream'
-                                   # Master/slave sub mode
-                                   # Valid values are combinations stream, slony
-                                   # or logical. Default is stream.
-                                   # (change requires restart)
 
 # - Streaming -
 
@@ -350,37 +441,35 @@ sr_check_period = 30
                                    # Disabled (0) by default
 sr_check_user = '${MONITOR_USER}'
                                    # Streaming replication check user
-                                   # This is necessary even if you disable
-                                   # streaming replication delay check with
-                                   # sr_check_period = 0
-
+                                   # This is neccessary even if you disable streaming
+                                   # replication delay check by sr_check_period = 0
 sr_check_password = '${MONITOR_PASSWORD}'
-                                   # Password for streaming replication check user.
+                                   # Password for streaming replication check user
                                    # Leaving it empty will make Pgpool-II to first look for the
                                    # Password in pool_passwd file before using the empty password
 
 sr_check_database = 'postgres'
                                    # Database name for streaming replication check
-delay_threshold = 0
+delay_threshold = 10000000
                                    # Threshold before not dispatching query to standby node
                                    # Unit is in bytes
                                    # Disabled (0) by default
 
 # - Special commands -
 
-follow_master_command = ''
-                                   # Executes this command after master failover
+follow_primary_command = ''
+                                   # Executes this command after main node failover
                                    # Special values:
                                    #   %d = failed node id
                                    #   %h = failed node host name
                                    #   %p = failed node port number
                                    #   %D = failed node database cluster path
-                                   #   %m = new master node id
-                                   #   %H = new master node hostname
-                                   #   %M = old master node id
+                                   #   %m = new main node id
+                                   #   %H = new main node hostname
+                                   #   %M = old main node id
                                    #   %P = old primary node id
-                                   #   %r = new master port number
-                                   #   %R = new master database cluster path
+                                   #   %r = new main port number
+                                   #   %R = new main database cluster path
                                    #   %N = old primary node hostname
                                    #   %S = old primary node port number
                                    #   %% = '%' character
@@ -403,8 +492,7 @@ health_check_password = '${MONITOR_PASSWORD}'
                                    # Password in pool_passwd file before using the empty password
 
 health_check_database = ''
-                                   # Database name for health check. If '', tries 'postgres' frist, then 'template1'
-
+                                   # Database name for health check. If '', tries 'postgres' frist, 
 health_check_max_retries = 0
                                    # Maximum number of times to retry a failed health check before giving up.
 health_check_retry_delay = 1
@@ -439,12 +527,12 @@ failover_command = ''
                                    #   %h = failed node host name
                                    #   %p = failed node port number
                                    #   %D = failed node database cluster path
-                                   #   %m = new master node id
-                                   #   %H = new master node hostname
-                                   #   %M = old master node id
+                                   #   %m = new main node id
+                                   #   %H = new main node hostname
+                                   #   %M = old main node id
                                    #   %P = old primary node id
-                                   #   %r = new master port number
-                                   #   %R = new master database cluster path
+                                   #   %r = new main port number
+                                   #   %R = new main database cluster path
                                    #   %N = old primary node hostname
                                    #   %S = old primary node port number
                                    #   %% = '%' character
@@ -455,12 +543,12 @@ failback_command = ''
                                    #   %h = failed node host name
                                    #   %p = failed node port number
                                    #   %D = failed node database cluster path
-                                   #   %m = new master node id
-                                   #   %H = new master node hostname
-                                   #   %M = old master node id
+                                   #   %m = new main node id
+                                   #   %H = new main node hostname
+                                   #   %M = old main node id
                                    #   %P = old primary node id
-                                   #   %r = new master port number
-                                   #   %R = new master database cluster path
+                                   #   %r = new main port number
+                                   #   %R = new main database cluster path
                                    #   %N = old primary node hostname
                                    #   %S = old primary node port number
                                    #   %% = '%' character
@@ -477,18 +565,11 @@ detach_false_primary = off
                                    # mode and with PostgreSQL 9.6 or
                                    # after.
 
-search_primary_node_timeout = 300
+search_primary_node_timeout = 5min
                                    # Timeout in seconds to search for the
                                    # primary node when a failover occurs.
                                    # 0 means no timeout, keep searching
                                    # for a primary node forever.
-
-auto_failback = off
-                                   # Dettached backend node reattach automatically
-                                   # if replication_state is 'streaming'.
-auto_failback_interval = 60
-                                   # Min interval of executing auto_failback in
-                                   # seconds.
 
 #------------------------------------------------------------------------------
 # ONLINE RECOVERY
@@ -516,6 +597,12 @@ client_idle_limit_in_recovery = 0
                                    # 0 means no disconnection
                                    # -1 means immediate disconnection
 
+auto_failback = off
+                                   # Dettached backend node reattach automatically
+                                   # if replication_state is 'streaming'.
+auto_failback_interval = 1min
+                                   # Min interval of executing auto_failback in
+                                   # seconds.
 
 #------------------------------------------------------------------------------
 # WATCHDOG
@@ -540,12 +627,25 @@ ping_path = '/bin'
 
 # - Watchdog communication Settings -
 
-wd_hostname = ''
-                                    # Host name or IP address of this watchdog
+hostname0 = ''
+                                    # Host name or IP address of pgpool node
+                                    # for watchdog connection
                                     # (change requires restart)
-wd_port = 9000
-                                    # port number for watchdog service
+wd_port0 = 9000
+                                    # Port number for watchdog service
                                     # (change requires restart)
+pgpool_port0 = 9999
+                                    # Port number for pgpool
+                                    # (change requires restart)
+
+#hostname1 = ''
+#wd_port1 = 9000
+#pgpool_port1 = 9999
+
+#hostname2 = ''
+#wd_port2 = 9000
+#pgpool_port2 = 9999
+
 wd_priority = 1
                                     # priority of this watchdog in leader election
                                     # (change requires restart)
@@ -598,7 +698,7 @@ wd_escalation_command = ''
                                     # Executes this command at escalation on new active pgpool.
                                     # (change requires restart)
 wd_de_escalation_command = ''
-                                    # Executes this command when master pgpool resigns from being master.
+                                    # Executes this command when leader pgpool resigns from being leader.
                                     # (change requires restart)
 
 # - Watchdog consensus settings for failover -
@@ -617,6 +717,7 @@ allow_multiple_failover_requests_from_node = off
                                     # A Pgpool-II node can cast multiple votes
                                     # for building the consensus on failover
                                     # (change requires restart)
+
 
 enable_consensus_with_half_votes = off
                                     # apply majority rule for consensus and quorum computation
@@ -639,7 +740,6 @@ wd_monitoring_interfaces_list = ''  # Comma separated list of interfaces names t
                                     # '' to disable monitoring
                                     # (change requires restart)
 
-
 wd_lifecheck_method = 'heartbeat'
                                     # Method of watchdog lifecheck ('heartbeat' or 'query' or 'external')
                                     # (change requires restart)
@@ -649,23 +749,13 @@ wd_interval = 10
 
 # -- heartbeat mode --
 
-wd_heartbeat_port = 9694
-                                    # Port number for receiving heartbeat signal
-                                    # (change requires restart)
-wd_heartbeat_keepalive = 2
-                                    # Interval time of sending heartbeat signal (sec)
-                                    # (change requires restart)
-wd_heartbeat_deadtime = 30
-                                    # Deadtime interval for heartbeat signal (sec)
-                                    # (change requires restart)
-heartbeat_destination0 = 'host0_ip1'
-                                    # Host name or IP address of destination 0
+heartbeat_hostname0 = ''
+                                    # Host name or IP address used
                                     # for sending heartbeat signal.
                                     # (change requires restart)
-heartbeat_destination_port0 = 9694 
-                                    # Port number of destination 0 for sending
-                                    # heartbeat signal. Usually this is the
-                                    # same as wd_heartbeat_port.
+heartbeat_port0 = 9694
+                                    # Port number used for receiving/sending heartbeat signal
+                                    # Usually this is the same as heartbeat_portX.
                                     # (change requires restart)
 heartbeat_device0 = ''
                                     # Name of NIC device (such like 'eth0')
@@ -675,9 +765,19 @@ heartbeat_device0 = ''
                                     # and pgpool has root privilege.
                                     # (change requires restart)
 
-#heartbeat_destination1 = 'host0_ip2'
-#heartbeat_destination_port1 = 9694
+#heartbeat_hostname1 = ''
+#heartbeat_port1 = 9694
 #heartbeat_device1 = ''
+#heartbeat_hostname2 = ''
+#heartbeat_port2 = 9694
+#heartbeat_device2 = ''
+
+wd_heartbeat_keepalive = 2
+                                    # Interval time of sending heartbeat signal (sec)
+                                    # (change requires restart)
+wd_heartbeat_deadtime = 30
+                                    # Deadtime interval for heartbeat signal (sec)
+                                    # (change requires restart)
 
 # -- query mode --
 
@@ -699,22 +799,6 @@ wd_lifecheck_password = ''
                                     # Password in pool_passwd file before using the empty password
                                     # (change requires restart)
 
-# - Other pgpool Connection Settings -
-
-#other_pgpool_hostname0 = 'host0'
-                                    # Host name or IP address to connect to for other pgpool 0
-                                    # (change requires restart)
-#other_pgpool_port0 = 5432
-                                    # Port number for other pgpool 0
-                                    # (change requires restart)
-#other_wd_port0 = 9000
-                                    # Port number for other watchdog 0
-                                    # (change requires restart)
-#other_pgpool_hostname1 = 'host1'
-#other_pgpool_port1 = 5432
-#other_wd_port1 = 9000
-
-
 #------------------------------------------------------------------------------
 # OTHERS
 #------------------------------------------------------------------------------
@@ -733,7 +817,6 @@ relcache_expire = 0
                                    # not consistent anymore.
                                    # For this purpose, cache_expiration
                                    # controls the life time of the cache.
-
 relcache_size = 256
                                    # Number of relation cache
                                    # entry. If you see frequently:
@@ -746,10 +829,10 @@ check_temp_table = catalog
 
 check_unlogged_table = on
                                    # If on, enable unlogged table check in SELECT statements.
-                                   # This initiates queries against system catalog of primary/master
-                                   # thus increases load of master.
+                                   # This initiates queries against system catalog of primary/main
+                                   # thus increases load of primary.
                                    # If you are absolutely sure that your system never uses unlogged tables
-                                   # and you want to save access to primary/master, you could turn this off.
+                                   # and you want to save access to primary/main, you could turn this off.
                                    # Default is on.
 enable_shared_relcache = on
                                    # If on, relation cache stored in memory cache,
@@ -757,7 +840,7 @@ enable_shared_relcache = on
                                    # Default is on.
                                    # (change requires restart)
 
-relcache_query_target = master     # Target node to send relcache queries. Default is master (primary) node.
+relcache_query_target = primary     # Target node to send relcache queries. Default is primary node.
                                    # If load_balance_node is specified, queries will be sent to load balance node.
 #------------------------------------------------------------------------------
 # IN MEMORY QUERY MEMORY CACHE
@@ -778,7 +861,7 @@ memqcache_memcached_port = 11211
                                    # Memcached port number. Mondatory if memqcache_method = 'memcached'.
                                    # Defaults to 11211.
                                    # (change requires restart)
-memqcache_total_size = 67108864
+memqcache_total_size = 64MB
                                    # Total memory size in bytes for storing memory cache.
                                    # Mandatory if memqcache_method = 'shmem'.
                                    # Defaults to 64MB.
@@ -798,22 +881,23 @@ memqcache_auto_cache_invalidation = on
                                    # DDL/DML/DCL(and memqcache_expire).  If off, it is only triggered
                                    # by memqcache_expire.  on by default.
                                    # (change requires restart)
-memqcache_maxcache = 409600
+memqcache_maxcache = 400kB
                                    # Maximum SELECT result size in bytes.
                                    # Must be smaller than memqcache_cache_block_size. Defaults to 400KB.
                                    # (change requires restart)
-memqcache_cache_block_size = 1048576
+memqcache_cache_block_size = 1MB
                                    # Cache block size in bytes. Mandatory if memqcache_method = 'shmem'.
                                    # Defaults to 1MB.
                                    # (change requires restart)
 memqcache_oiddir = '/var/log/pgpool/oiddir'
                                    # Temporary work directory to record table oids
                                    # (change requires restart)
-white_memqcache_table_list = ''
+cache_safe_memqcache_table_list = ''
                                    # Comma separated list of table names to memcache
                                    # that don't write to database
                                    # Regexp are accepted
-black_memqcache_table_list = ''
+cache_unsafe_memqcache_table_list = ''
                                    # Comma separated list of table names not to memcache
                                    # that don't write to database
                                    # Regexp are accepted
+

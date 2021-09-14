@@ -9,8 +9,9 @@ test -d "${PGDATA}"
 archive_dir=/var/backups/postgresql/archive
 replication_user=replicator
 replication_password_file=replicator-password
+application_name=
 
-options=$(getopt -u -o a:u:p: -l archive-dir:,user:,password-file: -- "${@}") || exit 1;
+options=$(getopt -u -o a:u:p:n: -l archive-dir:,user:,password-file:,application-name: -- "${@}") || exit 1;
 set -- ${options}
 
 while [ ${#} -gt "0" ]; do
@@ -21,6 +22,8 @@ while [ ${#} -gt "0" ]; do
       replication_password_file="${2}"; shift;;
     --archive-dir) 
       archive_dir="${2}"; shift;;
+    --application-name)
+      application_name="${2}"; shift;;
     (--) 
       shift; break;;
     (-*) 
@@ -35,6 +38,7 @@ done
 
 master_host=${1:-localhost}
 replication_password="$(cat ${replication_password_file})"
+test -n "${application_name}" || application_name=${HOSTNAME}
 
 # Prepare credentials
 
@@ -70,7 +74,7 @@ if ! [ -f "${PGDATA}/recovery.conf" ]; then
     
     cat <<-EOD > "${PGDATA}/recovery.conf"
 	standby_mode='on'
-	primary_conninfo='user=${replication_user} password=''${replication_password}'' host=${master_host} port=5432 sslmode=prefer sslcompression=0'
+	primary_conninfo='user=${replication_user} password=''${replication_password}'' host=${master_host} port=5432 application_name=${application_name} sslmode=prefer sslcompression=0'
 	trigger_file='trigger-failover'
 	restore_command='test ! -f ${archive_dir}/%f || cp -v ${archive_dir}/%f %p'
 	EOD

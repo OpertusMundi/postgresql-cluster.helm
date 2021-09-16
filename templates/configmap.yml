@@ -6,7 +6,13 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
 data:
-  {{- (.Files.Glob "files/config/*.conf").AsConfig | nindent 2 }}
+  postgresql.conf: |+
+    {{- .Files.Get "files/config/postgresql.conf" | nindent 4 }}
+  pg_hba.conf: |+
+    {{- .Files.Get "files/config/pg_hba.conf" | nindent 4 }}
+  replication-for-master.conf: |+
+    {{- include "postgresql-cluster.postgres.configurationStanzaForReplicationInMaster" . | nindent 4 }}
+  replication-for-standby.conf: |+
 
 ---
 apiVersion: v1
@@ -15,7 +21,6 @@ metadata:
   name: {{ .Release.Name }}-db-init-scripts
 data:
   {{- (.Files.Glob "files/db-init-scripts/*.sh").AsConfig | nindent 2 }}
-
 
 ---
 apiVersion: v1

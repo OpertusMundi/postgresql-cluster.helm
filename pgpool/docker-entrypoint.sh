@@ -74,6 +74,7 @@ test -n "${backend_configuration_escaped}"
 monitor_password="$(cat ${MONITOR_PASSWORD_FILE})"
 
 sed \
+    -e "s/^load_balance_mode[[:blank:]]*=[[:blank:]]*\(on\|off\)/load_balance_mode = ${LOAD_BALANCE:-on}/" \
     -e "s/\${NUM_PROCS}/${NUM_PROCS:-32}/" \
     -e "s/\${POOL_SIZE}/${POOL_SIZE:-4}/" \
     -e "s~\${POOL_PASSWD_FILE}~${POOL_PASSWD_FILE}~" \

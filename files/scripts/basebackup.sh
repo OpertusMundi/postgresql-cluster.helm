@@ -38,7 +38,9 @@ done
 
 master_host=${1:-localhost}
 replication_password="$(cat ${replication_password_file})"
+
 test -n "${application_name}" || application_name=${HOSTNAME}
+application_name=${application_name//-/_}
 
 # Prepare credentials
 

@@ -70,6 +70,24 @@ backend-role: standby
 tier-in-database-cluster: proxy
 {{- end }}
 
+{{- define "postgresql-cluster.postgres.standbyNames" -}}
+{{- $r := ($.Release.Name | replace "-" "_") -}}
+{{- range $i := (until (.Values.postgres.replicas | int)) -}}
+{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" $r $i -}}
+{{- end }}{{/* range */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.configurationStanzaForReplicationInMaster" -}}
+{{- $replicas := .Values.postgres.replicas | int -}}
+{{- $replicasToSync := .Values.postgres.replicasToSync | int -}}
+{{- if gt $replicasToSync $replicas }}
+{{- fail "The number of synchronous standbys must be less than or equal to number of replicas" -}}
+{{- else if gt $replicasToSync 0 -}}
+synchronous_commit = remote_apply
+synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "postgresql-cluster.postgres.standbyNames" .) | squote }}
+{{- end -}}{{/*if*/}}
+{{- end }}
+
 {{/* Create the name of the service account to use */}}
 {{- define "postgresql-cluster.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}

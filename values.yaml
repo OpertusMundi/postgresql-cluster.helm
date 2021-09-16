@@ -64,11 +64,11 @@ postgres:
       extraMatchLabels: 
         {}
   # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS
-  #maxNumConnections: 128
+  maxNumConnections: 135
   # (shared_buffers)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
-  #sharedBuffersSize: '128MB'
+  sharedBuffersSize: '128MB'
   # (work_mem)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
-  #workMemory: '6MB'
+  workMemory: '6MB'
   # resources for each server (master or standby)
   resources:
     limits:
@@ -80,12 +80,14 @@ postgres:
   readinessProbe:
     periodSeconds: 20
     initialDelaySeconds: 3
-  # the number (>= 0) of standby servers to start
+  # The number (>= 0) of standby servers to start
   replicas: 2
-
+  # The number of synchronous standbys (<= .replicas). If zero, all standbys will be asynchronous.
+  # see also: https://www.postgresql.org/docs/10/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES
+  replicasToSync: 0
   
 pgpool:
-  image: 'localhost:5000/pgpool:4.1-alpine'
+  image: 'localhost:5000/pgpool:4.2-alpine'
   imagePullSecrets:
     []
   securityContext:
@@ -95,11 +97,18 @@ pgpool:
   serviceName: ~
   # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN
   # see https://www.pgpool.net/mediawiki/index.php/Relationship_between_max_pool,_num_init_children,_and_max_connections
-  # TODO: check (a pre-install hook or a test?) that: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4)
+  # NOTE: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4)
   # number of children processes to spawn (see num_init_children of PgPool configuration)
   numProcs: 32
   # size of per-child connection pool (see max_pool of PgPool configuration)
   poolSize: 4
+  # How should PgPool load-balance readonly queries? 
+  #  * (null): Do not load balance (use only master)
+  #  * all: Load balance to all members of the cluster (some queries may return inconsistent results 
+  #      due to replication lag)
+  #  * sync: Load balance to master and synchronous standbys (this is only meaningful for synchronous replication,
+  #      i.e. when postgres.replicasToSync > 0)
+  loadBalance: 'all'
   resources:
     limits:
       cpu: 1.0

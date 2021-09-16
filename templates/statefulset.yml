@@ -149,7 +149,16 @@ spec:
           mountPath: /certs
           readOnly: true
         - name: config
-          mountPath: /etc/postgresql
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql/pg_hba.conf
+          subPath: pg_hba.conf
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql/conf.d/01-replication.conf
+          subPath: replication-for-master.conf
           readOnly: true
         - name: db-init-scripts
           mountPath: /docker-entrypoint-initdb.d 
@@ -307,7 +316,16 @@ spec:
           mountPath: /certs
           readOnly: true
         - name: config
-          mountPath: /etc/postgresql
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql/pg_hba.conf
+          subPath: pg_hba.conf
+          readOnly: true
+        - name: config
+          mountPath: /etc/postgresql/conf.d/01-replication.conf
+          subPath: replication-for-standby.conf
           readOnly: true
         ports:
         - name: postgresql

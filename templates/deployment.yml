@@ -3,6 +3,11 @@
 {{- $postgresServiceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
 {{- $masterHost := printf "%s-master-0.%s" .Release.Name $postgresServiceName -}}
 
+{{/* Check that: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4) */}}
+{{- if gt (mul .Values.pgpool.numProcs .Values.pgpool.poolSize) (sub .Values.postgres.maxNumConnections 4) -}}
+{{ fail "Must increase the max number of connections for the PostgreSQL backend!" }}
+{{ end -}}
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -85,23 +90,27 @@ spec:
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
         - name: NUM_PROCS
-          value: "{{ .Values.pgpool.numProcs }}"
+          value: '{{ .Values.pgpool.numProcs }}'
         - name: POOL_SIZE
-          value: "{{ .Values.pgpool.poolSize }}"
+          value: '{{ .Values.pgpool.poolSize }}'
+        - name: LOAD_BALANCE
+          value: '{{ .Values.pgpool.loadBalance | empty | ternary "off" "on" }}'
         - name: BACKEND_0_HOST
           value: {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceName }}
         - name: BACKEND_0_WEIGHT
-          value: "1"
+          value: '1'
         - name: BACKEND_0_NAME
           value: server0
-        {{- range $i := (until (int .Values.postgres.replicas)) }}
+        {{- if .Values.pgpool.loadBalance }}
+        {{- range $i := (until (eq .Values.pgpool.loadBalance "sync" | ternary (int .Values.postgres.replicasToSync) (int .Values.postgres.replicas))) }}
         - name: {{ printf "BACKEND_%d_HOST" ($i| add1) }}
           value: {{ printf "%s-standby-%d.%s" $.Release.Name $i $postgresServiceName }}
         - name: {{ printf "BACKEND_%d_WEIGHT" ($i| add1) }}
-          value: "1"
+          value: '1'
         - name: {{ printf "BACKEND_%d_NAME" ($i| add1) }}
           value: {{ printf "server%d" ($i| add1) }}
-        {{- end }}{{/* range */}}
+        {{- end -}}{{/* range */}}
+        {{- end }}{{/* if loadBalance */}}
         volumeMounts:
         - name: pgpool-admin-password
           mountPath: /secrets/pgpool-admin-password

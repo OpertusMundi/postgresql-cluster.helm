@@ -95,12 +95,14 @@ pgpool:
     uid: 70
     gid: 70 
   serviceName: ~
+  # numProcs is the number of children processes to spawn (see num_init_children of PgPool configuration)
   # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN
+  # NOTE: numProcs is also the maximum number of concurrent client connections! (as each connecting client is assigned 
+  # to a single (available) child process)
+  numProcs: 32
+  # poolSize is the size of per-child connection pool (see max_pool of PgPool configuration)
   # see https://www.pgpool.net/mediawiki/index.php/Relationship_between_max_pool,_num_init_children,_and_max_connections
   # NOTE: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4)
-  # number of children processes to spawn (see num_init_children of PgPool configuration)
-  numProcs: 32
-  # size of per-child connection pool (see max_pool of PgPool configuration)
   poolSize: 4
   # How should PgPool load-balance readonly queries? 
   #  * (null): Do not load balance (use only master)

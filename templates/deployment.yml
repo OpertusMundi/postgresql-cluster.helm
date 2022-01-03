@@ -93,6 +93,10 @@ spec:
           value: '{{ .Values.pgpool.numProcs }}'
         - name: POOL_SIZE
           value: '{{ .Values.pgpool.poolSize }}'
+        - name: CHILD_LIFE_TIME
+          value: '{{ .Values.pgpool.childLifeTime | default "5min" }}'
+        - name: CLIENT_IDLE_LIMIT
+          value: '{{ .Values.pgpool.clientIdleLimit | default "0" }}'
         - name: LOAD_BALANCE
           value: '{{ .Values.pgpool.loadBalance | empty | ternary "off" "on" }}'
         - name: BACKEND_0_HOST

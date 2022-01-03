@@ -77,6 +77,8 @@ sed \
     -e "s/^load_balance_mode[[:blank:]]*=[[:blank:]]*\(on\|off\)/load_balance_mode = ${LOAD_BALANCE:-on}/" \
     -e "s/\${NUM_PROCS}/${NUM_PROCS:-32}/" \
     -e "s/\${POOL_SIZE}/${POOL_SIZE:-4}/" \
+    -e "s/\${CHILD_LIFE_TIME}/${CHILD_LIFE_TIME:-5min}/" \
+    -e "s/\${CLIENT_IDLE_LIMIT}/${CLIENT_IDLE_LIMIT:-0}/" \
     -e "s~\${POOL_PASSWD_FILE}~${POOL_PASSWD_FILE}~" \
     -e "s~^ssl[[:blank:]]*=[[:blank:]]*off~ssl = on~" \
     -e "s~\${TLS_KEY_FILE}~${TLS_KEY_FILE}~" \

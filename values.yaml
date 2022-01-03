@@ -104,6 +104,8 @@ pgpool:
   # see https://www.pgpool.net/mediawiki/index.php/Relationship_between_max_pool,_num_init_children,_and_max_connections
   # NOTE: poolSize * numProcs <= maxNumConnections - (numOfReservedConnections = 4)
   poolSize: 4
+  #childLifeTime: '5min'
+  #clientIdleLimit: '0'
   # How should PgPool load-balance readonly queries? 
   #  * (null): Do not load balance (use only master)
   #  * all: Load balance to all members of the cluster (some queries may return inconsistent results 

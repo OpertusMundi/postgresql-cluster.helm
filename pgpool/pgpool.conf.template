@@ -161,7 +161,7 @@ max_pool = ${POOL_SIZE}
 
 # - Life time -
 
-child_life_time = 5min
+child_life_time = ${CHILD_LIFE_TIME}
                                    # Pool exits after being idle for this many seconds
 child_max_connections = 0
                                    # Pool exits after receiving that many connections
@@ -169,7 +169,7 @@ child_max_connections = 0
 connection_life_time = 0
                                    # Connection to backend closes after being idle for this many seconds
                                    # 0 means no close
-client_idle_limit = 0
+client_idle_limit = ${CLIENT_IDLE_LIMIT}
                                    # Client is disconnected after being idle for that many seconds
                                    # (even inside an explicit transactions!)
                                    # 0 means no disconnection

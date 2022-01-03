@@ -1,4 +1,4 @@
-FROM alpine:3.13
+FROM alpine:3.15
 
 RUN apk update && apk add --no-cache pgpool su-exec bash
 
@@ -16,6 +16,8 @@ ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
     TLS_CERT_FILE="/certs/pgpool.crt" \
     NUM_PROCS="32" \
     POOL_SIZE="4" \
+    CHILD_LIFE_TIME="5min" \
+    CLIENT_IDLE_LIMIT="0" \
     LOAD_BALANCE="on" \
     BACKEND_0_HOST="localhost" \
     BACKEND_0_PORT="5432" \

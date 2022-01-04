@@ -287,7 +287,7 @@ pid_file_name = '/var/run/pgpool/pgpool.pid'
                                    # location of pgpool.conf file or
                                    # as an absolute path
                                    # (change requires restart)
-logdir = '/var/log/pgpool'
+logdir = '/var/run/pgpool'
                                    # Directory of pgPool status file
                                    # (change requires restart)
 
@@ -889,7 +889,7 @@ memqcache_cache_block_size = 1MB
                                    # Cache block size in bytes. Mandatory if memqcache_method = 'shmem'.
                                    # Defaults to 1MB.
                                    # (change requires restart)
-memqcache_oiddir = '/var/log/pgpool/oiddir'
+memqcache_oiddir = '/var/local/lib/pgpool/oiddir'
                                    # Temporary work directory to record table oids
                                    # (change requires restart)
 cache_safe_memqcache_table_list = ''

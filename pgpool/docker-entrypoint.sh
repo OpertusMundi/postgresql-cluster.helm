@@ -40,33 +40,24 @@ fi
 
 # Generate credentials for management interface (pcp.conf)
 
+pcp_config_file=/usr/local/etc/pcp.conf
 pgpool_admin_password=$(cat ${PGPOOL_ADMIN_PASSWORD_FILE})
 
-echo "${PGPOOL_ADMIN_USER}:"$(pg_md5 "${pgpool_admin_password}") >> /var/lib/pgpool/pcp.conf
+echo "${PGPOOL_ADMIN_USER}:"$(pg_md5 "${pgpool_admin_password}") >> ${pcp_config_file}
+chown root:postgres ${pcp_config_file} && chmod g=r,o= ${pcp_config_file}
 
 echo "*:*:${PGPOOL_ADMIN_USER}:${pgpool_admin_password}" > ~/.pcppass
 chmod u=rw,g=,o= ~/.pcppass
 
 #
-# Generate pool_passwd from directory of user credentials
-#
-
-if [ ! -f ${POOL_PASSWD_FILE} ]; then
-    touch ${POOL_PASSWD_FILE} 
-    chown root:postgres ${POOL_PASSWD_FILE} && chmod g=r,o= ${POOL_PASSWD_FILE}
-    if [ -d "${USER_PASSWORDS_DIR}" ]; then
-        for username in  $(ls -1 ${USER_PASSWORDS_DIR}); do
-            pg_md5 --md5auth --username ${username} "$(cat ${USER_PASSWORDS_DIR%/}/${username})"
-        done
-    fi
-fi
-
-#
 # Generate pgpool.conf
 #
 
-touch /etc/pgpool/pgpool.conf
-chmod g=r,o= /etc/pgpool/pgpool.conf && chown root:postgres /etc/pgpool/pgpool.conf
+config_template_file=/usr/local/etc/pgpool.conf.template
+config_file=/usr/local/etc/pgpool.conf
+
+touch ${config_file}
+chmod g=r,o= ${config_file} && chown root:postgres ${config_file}
 
 backend_configuration_escaped=$(_gen_configuration_for_backend | sed ':a;N;$!ba;s/\n/\\n/g')
 test -n "${backend_configuration_escaped}"
@@ -86,10 +77,26 @@ sed \
     -e "s/\${MONITOR_USER}/${MONITOR_USER}/" \
     -e "s/\${MONITOR_PASSWORD}/${monitor_password}/" \
     -e "/^#[[:blank:]]\+[-][[:blank:]]\+Backend/a "'\\n'"${backend_configuration_escaped}" \
-    /etc/pgpool/pgpool.conf.template > /etc/pgpool/pgpool.conf
+    ${config_template_file} > ${config_file}
+
+#
+# Generate pool_passwd from directory of user credentials
+#
+
+pool_passwd_file=${POOL_PASSWD_FILE}
+
+if [ ! -f ${pool_passwd_file} ]; then
+    touch ${pool_passwd_file}
+    chown root:postgres ${pool_passwd_file} && chmod g=r,o= ${pool_passwd_file}
+    if [ -d "${USER_PASSWORDS_DIR}" ]; then
+        for username in  $(ls -1 ${USER_PASSWORDS_DIR}); do
+            pg_md5 --md5auth --username ${username} "$(cat ${USER_PASSWORDS_DIR%/}/${username})"
+        done
+    fi
+fi
 
 #
 # Start
 #
 
-exec su-exec postgres $@
+exec gosu postgres $@

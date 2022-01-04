@@ -1,12 +1,42 @@
-FROM alpine:3.15
+# vim: set syntax=dockerfile:
 
-RUN apk update && apk add --no-cache pgpool su-exec bash
+FROM debian:10.11-slim AS build-stage-1
 
-RUN mkdir /var/run/pgpool /var/lib/pgpool && \
-    chown root:postgres /var/run/pgpool /var/lib/pgpool && chmod 0775 /var/run/pgpool /var/lib/pgpool
-COPY --chown=root:postgres pool_hba.conf pgpool.conf.template /etc/pgpool/
+ENV PGPOOL_VERSION="4.2.6"
 
-ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends gcc build-essential libpq-dev libssl-dev libpam0g-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+ADD https://www.pgpool.net/mediawiki/download.php?f=pgpool-II-${PGPOOL_VERSION}.tar.gz /opt/pgpool-II-${PGPOOL_VERSION}.tar.gz
+RUN tar xzf /opt/pgpool-II-${PGPOOL_VERSION}.tar.gz -C /opt/
+WORKDIR /opt/pgpool-II-${PGPOOL_VERSION}
+RUN ./configure --prefix=/usr/local --with-openssl --with-pam && make && make install
+
+
+FROM debian:10.11-slim
+
+ENV PGPOOL_VERSION="4.2.6"
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends gosu libpq5 libssl1.1 libpam0g \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g 999 postgres \
+  && useradd -g 999 -u 999 -M postgres
+
+RUN mkdir -p /var/run/pgpool /var/local/lib/pgpool \
+  && chown postgres:postgres /var/run/pgpool /var/local/lib/pgpool \
+  && chmod 0775 /var/run/pgpool /var/local/lib/pgpool
+
+COPY --from=build-stage-1 /usr/local/ /usr/local/
+ENV LD_LIBRARY_PATH="/usr/local/lib"
+
+COPY --chown=root:postgres pool_hba.conf pgpool.conf.template /usr/local/etc/
+
+ENV POOL_PASSWD_FILE="/usr/local/etc/pool_passwd" \
     PGPOOL_ADMIN_USER="pgpool" \
     PGPOOL_ADMIN_PASSWORD_FILE="/secrets/pgpool-admin-password" \
     MONITOR_USER="monitor" \
@@ -29,5 +59,5 @@ RUN chmod 0744 /docker-entrypoint.sh
 
 STOPSIGNAL SIGINT
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["pgpool", "-n", "-D", "-F", "/var/lib/pgpool/pcp.conf"]
+CMD ["/usr/local/bin/pgpool", "-n", "-D"]
 

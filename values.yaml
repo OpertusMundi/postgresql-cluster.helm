@@ -87,13 +87,13 @@ postgres:
   replicasToSync: 0
   
 pgpool:
-  image: 'localhost:5000/pgpool:4.2-alpine'
+  image: 'localhost:5000/pgpool:4.2-debian'
   imagePullSecrets:
     []
   securityContext:
     # The id of the user/group running pgpool (user "postgres")
-    uid: 70
-    gid: 70 
+    uid: 999
+    gid: 999
   serviceName: ~
   # numProcs is the number of children processes to spawn (see num_init_children of PgPool configuration)
   # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN

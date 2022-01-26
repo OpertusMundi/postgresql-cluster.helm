@@ -1,9 +1,8 @@
 #!/bin/bash
-set -e
-set -u
+set -e -u
 
 psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" <<-EOD
+SET SESSION synchronous_commit TO local;
 CREATE USER ${MONITOR_USER} WITH LOGIN IN ROLE pg_monitor;
 ALTER ROLE ${MONITOR_USER} PASSWORD '$(cat ${MONITOR_PASSWORD_FILE})';
 EOD
-

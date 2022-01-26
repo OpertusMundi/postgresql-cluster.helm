@@ -1,8 +1,8 @@
 #!/bin/bash
-set -e
-set -u
+set -e -u
 
 psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" <<-EOD
+SET SESSION synchronous_commit TO local; 
 CREATE USER ${REPLICATION_USER} WITH REPLICATION;
 ALTER ROLE ${REPLICATION_USER} PASSWORD '$(cat ${REPLICATION_PASSWORD_FILE})';
 EOD

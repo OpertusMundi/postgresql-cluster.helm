@@ -1,5 +1,5 @@
 #!/bin/bash 
-set -e
+set -e 
 
 [ -n "${USER_PASSWORDS_DIR}" ] || exit 0;
 if [ ! -d "${USER_PASSWORDS_DIR}" ]; then
@@ -10,7 +10,9 @@ fi
 quote='$q$'
 for f in $(ls ${USER_PASSWORDS_DIR}); do
     user=${f}
-    pass=$(cat ${USER_PASSWORDS_DIR}/${f})
-    echo "CREATE USER ${user} WITH PASSWORD ${quote}${pass}${quote} LOGIN;" |\
-        psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
+    pass=$(cat ${USER_PASSWORDS_DIR}/${f} | tr -d '[:space:]')
+    {
+        echo "SET SESSION synchronous_commit TO local;"
+        echo "CREATE USER ${user} WITH PASSWORD ${quote}${pass}${quote} LOGIN;"
+    } | psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
 done

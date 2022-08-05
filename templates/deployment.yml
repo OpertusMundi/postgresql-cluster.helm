@@ -8,7 +8,9 @@
 {{ fail "Must increase the max number of connections for the PostgreSQL backend!" }}
 {{ end -}}
 
+# manifests
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

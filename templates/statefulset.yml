@@ -15,7 +15,9 @@
 {{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
 {{- $masterHost := printf "%s-master-0.%s" .Release.Name (include "postgresql-cluster.postgres.serviceName" .) -}}
 
+# manifests
 ---
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -94,7 +96,12 @@ spec:
           defaultMode: 0640
       - name: config
         configMap:
-          name: {{ .Release.Name }}-config
+          name: {{ .Release.Name }}-config-generated
+      {{- if .Values.postgres.configurationFrom }}
+      - name: config-extra
+        configMap:
+          name: {{ .Values.postgres.configurationFrom.configMapKeyRef.name }}
+      {{- end }}
       - name: db-init-scripts
         configMap:
           name: {{ .Release.Name }}-db-init-scripts
@@ -160,6 +167,16 @@ spec:
           mountPath: /etc/postgresql/conf.d/01-replication.conf
           subPath: replication-for-master.conf
           readOnly: true
+        {{- if .Values.postgres.configurationFrom }}
+        {{- range $i, $key := .Values.postgres.configurationFrom.configMapKeyRef.key }}
+        {{- if (hasSuffix ".conf" $key) }}
+        - name: config-extra
+          mountPath: {{ printf "/etc/postgresql/conf.d/99-x%d-%s" $i $key }}
+          subPath: {{ $key }}
+          readOnly: true
+        {{- end }}{{/* if (hasSuffix ".conf" $key) */}}
+        {{- end }}{{/* range */}}
+        {{- end }}{{/* if .Values.postgres.configurationFrom */}}
         - name: db-init-scripts
           mountPath: /docker-entrypoint-initdb.d 
           readOnly: true
@@ -241,7 +258,12 @@ spec:
           defaultMode: 0640
       - name: config
         configMap:
-          name: {{ .Release.Name }}-config
+          name: {{ .Release.Name }}-config-generated
+      {{- if .Values.postgres.configurationFrom }}
+      - name: config-extra
+        configMap:
+          name: {{ .Values.postgres.configurationFrom.configMapKeyRef.name }}
+      {{- end }}
       - name: scripts
         configMap:
           name: {{ .Release.Name }}-scripts
@@ -327,6 +349,16 @@ spec:
           mountPath: /etc/postgresql/conf.d/01-replication.conf
           subPath: replication-for-standby.conf
           readOnly: true
+        {{- if .Values.postgres.configurationFrom }}
+        {{- range $i, $key := .Values.postgres.configurationFrom.configMapKeyRef.key }}
+        {{- if (hasSuffix ".conf" $key) }}
+        - name: config-extra
+          mountPath: {{ printf "/etc/postgresql/conf.d/99-x%d-%s" $i $key }}
+          subPath: {{ $key }}
+          readOnly: true
+        {{- end }}{{/* if (hasSuffix ".conf" $key) */}}
+        {{- end }}{{/* range */}}
+        {{- end }}{{/* if .Values.postgres.configurationFrom */}}
         ports:
         - name: postgresql
           containerPort: 5432

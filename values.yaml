@@ -69,7 +69,12 @@ postgres:
   sharedBuffersSize: '128MB'
   # (work_mem)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
   workMemory: '6MB'
-  # resources for each server (master or standby)
+  # Add extra configuration files (under /etc/postgresql/conf.d) from a configMap
+  #configurationFrom:
+    #configMapKeyRef: 
+    #  name: postgres-1-config-extra
+    #  key: ['shared-preload-libraries.conf']
+  # Limit resources for each server (master or standby)
   resources:
     limits:
        cpu: 2.0
@@ -113,6 +118,7 @@ pgpool:
   #  * sync: Load balance to master and synchronous standbys (this is only meaningful for synchronous replication,
   #      i.e. when postgres.replicasToSync > 0)
   loadBalance: 'all'
+  # Limit resources
   resources:
     limits:
       cpu: 1.0

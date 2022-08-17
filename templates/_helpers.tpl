@@ -128,3 +128,8 @@ synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "
 {{- define "postgresql-cluster.pgpool.serviceName" -}}
 {{ .Values.postgres.serviceName | default (printf "%s-pgpool" .Release.Name) }} 
 {{- end }}
+
+{{- define "postgresql-cluster.postgres.archivePvcName" -}}
+{{ printf "archive-%s" .Release.Name }} 
+{{- end }}
+

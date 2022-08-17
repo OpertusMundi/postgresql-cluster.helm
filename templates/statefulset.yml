@@ -47,20 +47,6 @@ spec:
           {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
           backend-role: master
           {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
-  # PVC template for archive directory
-  - metadata:
-      name: archive
-    spec:
-      accessModes: 
-      - ReadWriteMany
-      storageClassName: {{ .archiveDir.storageClassName }}
-      resources:
-        requests:
-          storage: {{ .archiveDir.size }}
-      selector:
-        matchLabels:
-          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
-          {{- if .archiveDir.extraMatchLabels }}{{ toYaml .archiveDir.extraMatchLabels | nindent 10 }}{{- end }}
   {{- end }}
   # Pod template
   template:
@@ -74,6 +60,9 @@ spec:
       securityContext:
         fsGroup: {{ .Values.postgres.securityContext.gid }}
       volumes:
+      - name: archive
+        persistentVolumeClaim:
+          claimName: {{ include "postgresql-cluster.postgres.archivePvcName" . }}
       - name: postgres-password
         secret:
           secretName: {{ include "postgresql-cluster.postgresPassword.secretName" . }}
@@ -112,6 +101,10 @@ spec:
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.name"
         - name: POSTGRES_INITDB_ARGS
           value: >-
             --data-checksums
@@ -140,6 +133,7 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: archive
           mountPath: /var/backups/postgresql/archive
+          subPathExpr: $(POD_NAME)
         - name: postgres-password
           mountPath: /secrets/postgres-password
           readOnly: true
@@ -241,9 +235,9 @@ spec:
       securityContext:
         fsGroup: {{ .Values.postgres.securityContext.gid }}
       volumes:
-      - name: archive-master
+      - name: archive
         persistentVolumeClaim:
-          claimName: {{ printf "archive-%s-master-0" .Release.Name }}
+          claimName: {{ include "postgresql-cluster.postgres.archivePvcName" . }}
       - name: postgres-password
         secret:
           secretName: {{ include "postgresql-cluster.postgresPassword.secretName" . }}
@@ -268,11 +262,6 @@ spec:
         configMap:
           name: {{ .Release.Name }}-scripts
           defaultMode: 0774
-          items:
-          - key: wait-for-host.sh
-            path: wait-for-host.sh
-          - key: basebackup.sh
-            path: basebackup.sh
       initContainers:
       - name: wait-for-master
         image: busybox:1
@@ -289,18 +278,47 @@ spec:
       - name: basebackup
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
+        env:
+        - name: REPLICATION_USER
+          value: replicator
+        - name: REPLICATION_PASSWORD_FILE
+          value: /secrets/replication-password/password
+        - name: MASTER_HOST
+          value: {{ $masterHost }}
         command: 
         - su-exec
         - postgres
         - /opt/basebackup.sh
-        - --user
-        - replicator
-        - --password-file
-        - /secrets/replication-password/password
-        - --archive-dir
-        - /var/backups/postgresql/archive-master
-        - {{ $masterHost }}
         volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: replication-password
+          mountPath: /secrets/replication-password
+          readOnly: true
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+      - name: generate-recovery-conf
+        image: "{{ .Values.postgres.image }}"
+        env:
+        - name: REPLICATION_USER
+          value: replicator
+        - name: REPLICATION_PASSWORD_FILE
+          value: /secrets/replication-password/password
+        - name: MASTER_HOST
+          value: {{ $masterHost }}
+        - name: ARCHIVE_MASTER_DIR
+          value: /var/backups/postgresql/archive-master
+        command: 
+        - su-exec
+        - postgres
+        - /opt/generate-recovery-conf.sh
+        - --force
+        volumeMounts:
+        - name: archive
+          mountPath: /var/backups/postgresql/archive-master
+          subPathExpr: {{ printf "%s-master-0" .Release.Name }}
+          readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
         - name: replication-password
@@ -315,11 +333,17 @@ spec:
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
         env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.name"
         - name: CONFIG_FILE
           value: /etc/postgresql/postgresql.conf
         - name: POSTGRES_PASSWORD_FILE
           value: /secrets/postgres-password/password
-        - name: ARCHIVE_FROM_DIR
+        - name: ARCHIVE_DIR
+          value: /var/backups/postgresql/archive
+        - name: ARCHIVE_MASTER_DIR
           value: /var/backups/postgresql/archive-master
         - name: TLS_KEY_FILE
           value: /certs/tls.key
@@ -328,9 +352,13 @@ spec:
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
-        - name: archive-master
+        - name: archive
           mountPath: /var/backups/postgresql/archive-master
+          subPathExpr: {{ printf "%s-master-0" .Release.Name }}
           readOnly: true
+        - name: archive
+          mountPath: /var/backups/postgresql/archive
+          subPathExpr: $(POD_NAME)
         - name: postgres-password
           mountPath: /secrets/postgres-password
           readOnly: true

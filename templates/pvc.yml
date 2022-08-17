@@ -1,0 +1,20 @@
+# vim: set filetype=helm: 
+
+{{- with .Values.postgres.volumeClaims }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "archive-%s" $.Release.Name }}
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .archiveDir.size }}
+  storageClassName: {{ .archiveDir.storageClassName }}
+  volumeMode: Filesystem
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabels" $ | nindent 6 }}  
+      {{- if .archiveDir.extraMatchLabels }}{{ toYaml .archiveDir.extraMatchLabels | nindent 6 }}{{- end }}
+{{- end }}{{/* with .Values.postgres.volumeClaims */}}

@@ -11,7 +11,7 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-# A map of annotations to apply to all Pods in the database cluster
+# A map of annotations to apply to all Pods
 podAnnotations: {}
 
 # The secret holding the password of `postgres` user (the administrator)
@@ -42,6 +42,7 @@ tls:
 postgres:
   image: 'postgres:10.14-alpine'
   #image: 'postgis/postgis:10-3.0-alpine'
+  podAnnotations: {}
   # The name of the headless service governing the network id of stateful sets
   serviceName:
   securityContext:
@@ -95,6 +96,7 @@ pgpool:
   image: 'localhost:5000/pgpool:4.2-alpine'
   imagePullSecrets:
     []
+  podAnnotations: {}
   securityContext:
     # The id of the user/group running pgpool (user "postgres")
     uid: 70
@@ -127,6 +129,7 @@ pgpool:
       cpu: 0.5
       memory: 128Mi
   readinessProbe:
+    enabled: true
     periodSeconds: 30
     initialDelaySeconds: 3
   # the number (>= 0) of PgPool servers to start

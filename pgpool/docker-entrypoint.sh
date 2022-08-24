@@ -85,6 +85,9 @@ sed \
     -e "s~\${TLS_CERT_FILE}~${TLS_CERT_FILE}~" \
     -e "s/\${MONITOR_USER}/${MONITOR_USER}/" \
     -e "s/\${MONITOR_PASSWORD}/${monitor_password}/" \
+    -e "s/\${HEALTH_CHECK_PERIOD}/${HEALTH_CHECK_PERIOD}/" \
+    -e "s/\${HEALTH_CHECK_MAX_RETRIES}/${HEALTH_CHECK_MAX_RETRIES}/" \
+    -e "s/\${HEALTH_CHECK_RETRY_DELAY}/${HEALTH_CHECK_RETRY_DELAY}/" \
     -e "/^#[[:blank:]]\+[-][[:blank:]]\+Backend/a "'\\n'"${backend_configuration_escaped}" \
     /etc/pgpool/pgpool.conf.template > /etc/pgpool/pgpool.conf
 

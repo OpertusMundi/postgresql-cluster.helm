@@ -7,6 +7,7 @@ RUN mkdir /var/run/pgpool /var/lib/pgpool && \
 COPY --chown=root:postgres pool_hba.conf pgpool.conf.template /etc/pgpool/
 
 ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
+    PCP_SOCKET_DIR="/var/run/pgpool" \
     PGPOOL_ADMIN_USER="pgpool" \
     PGPOOL_ADMIN_PASSWORD_FILE="/secrets/pgpool-admin-password" \
     MONITOR_USER="monitor" \
@@ -19,6 +20,9 @@ ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
     CHILD_LIFE_TIME="5min" \
     CLIENT_IDLE_LIMIT="0" \
     LOAD_BALANCE="on" \
+    HEALTH_CHECK_PERIOD="90" \
+    HEALTH_CHECK_MAX_RETRIES="3" \
+    HEALTH_CHECK_RETRY_DELAY="15" \
     BACKEND_0_HOST="localhost" \
     BACKEND_0_PORT="5432" \
     BACKEND_0_WEIGHT="1" \

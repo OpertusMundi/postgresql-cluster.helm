@@ -2,8 +2,7 @@
 set -e
 #set -x
 
-pcp_socket_dir=/var/run/pgpool/
-pcp_opts="--host ${pcp_socket_dir} --username pgpool --no-password"
+pcp_opts="--host ${PCP_SOCKET_DIR} --username pgpool --no-password"
 
 n=$(pcp_node_count ${pcp_opts})
 test $n -gt "0"

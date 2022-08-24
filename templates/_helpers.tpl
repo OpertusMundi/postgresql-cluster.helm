@@ -71,9 +71,14 @@ tier-in-database-cluster: proxy
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.standbyNames" -}}
-{{- $r := ($.Release.Name | replace "-" "_") -}}
 {{- range $i := (until (.Values.postgres.replicas | int)) -}}
-{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" $r $i -}}
+{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($.Release.Name | replace "-" "_") $i -}}
+{{- end }}{{/* range */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.synchronousStandbyNames" -}}
+{{- range $i := (until (.Values.postgres.replicasToSync | int)) -}}
+{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($.Release.Name | replace "-" "_") $i -}}
 {{- end }}{{/* range */}}
 {{- end }}
 
@@ -84,7 +89,7 @@ tier-in-database-cluster: proxy
 {{- fail "The number of synchronous standbys must be less than or equal to number of replicas" -}}
 {{- else if gt $replicasToSync 0 -}}
 synchronous_commit = remote_apply
-synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "postgresql-cluster.postgres.standbyNames" .) | squote }}
+synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "postgresql-cluster.postgres.synchronousStandbyNames" .) | squote }}
 {{- end -}}{{/*if*/}}
 {{- end }}
 

@@ -268,6 +268,8 @@ spec:
         configMap:
           name: {{ .Release.Name }}-scripts
           defaultMode: 0774
+      - name: pgpass
+        emptyDir: {}
       initContainers:
       - name: wait-for-master
         image: busybox:1
@@ -281,29 +283,61 @@ spec:
         - name: scripts
           mountPath: /opt/
           readOnly: true
-      - name: basebackup
-        image: "{{ .Values.postgres.image }}"
+      - name: generate-pgpass
+        image: busybox:1
         imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: {{ .Values.postgres.securityContext.uid }}
         env:
+        - name: MASTER_HOST
+          value: {{ $masterHost }}
         - name: REPLICATION_USER
           value: replicator
         - name: REPLICATION_PASSWORD_FILE
           value: /secrets/replication-password/password
+        - name: POSTGRES_PASSWORD_FILE
+          value: /secrets/postgres-password/password
+        - name: PGPASSFILE
+          value: /etc/postgresql/pgpass/.pgpass
+        command:
+        - /opt/generate-pgpass-for-standby.sh
+        volumeMounts:
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+        - name: pgpass
+          mountPath: /etc/postgresql/pgpass 
+        - name: postgres-password
+          mountPath: /secrets/postgres-password
+          readOnly: true
+        - name: replication-password
+          mountPath: /secrets/replication-password
+          readOnly: true
+      {{- if .Values.postgres.standby.prepareData }}
+      - name: prepare-data
+        image: "{{ .Values.postgres.image }}"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PGPASSFILE
+          value: /etc/postgresql/pgpass/.pgpass
+        - name: REPLICATION_USER
+          value: replicator
         - name: MASTER_HOST
           value: {{ $masterHost }}
         command: 
         - su-exec
         - postgres
-        - /opt/basebackup.sh
+        - /opt/prepare-data-for-standby.sh
         volumeMounts:
+        - name: pgpass
+          mountPath: /etc/postgresql/pgpass
+          readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
-        - name: replication-password
-          mountPath: /secrets/replication-password
-          readOnly: true
         - name: scripts
           mountPath: /opt/
           readOnly: true
+      {{- end }}{{/* if .Values.postgres.standby.prepareData */}}
       - name: generate-recovery-conf
         image: "{{ .Values.postgres.image }}"
         env:

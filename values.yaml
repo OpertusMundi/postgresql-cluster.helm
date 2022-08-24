@@ -91,7 +91,9 @@ postgres:
   # The number of synchronous standbys (<= .replicas). If zero, all standbys will be asynchronous.
   # see also: https://www.postgresql.org/docs/10/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES
   replicasToSync: 0
-  
+  standby:
+    prepareData: true
+
 pgpool:
   image: 'localhost:5000/pgpool:4.2-alpine'
   imagePullSecrets:

@@ -1,15 +1,19 @@
 #!/bin/sh
 set -e -u
-#set -x
+set -x
 
 test -d "${PGDATA}"
 
+# Prepare data dir: rewind or basebackup
+
 if [ -n "$(ls -A ${PGDATA})" ]; then
-    echo "The target directory (${PGDATA}) is not empty. Skipping basebackup." 1>&2
+    # data directory is not empty
     if ! [ -f "${PGDATA}/PG_VERSION" ]; then
         echo "The target directory (${PGDATA}) is not a data directory! (PG_VERSION not found)" 1>&2
         exit 1
     fi
+    # note: if target and source are already on the same timeline, rewind does nothing 
+    pg_rewind -P --target-pgdata ${PGDATA} --source-server="user=postgres host=${MASTER_HOST}"
 else
     # data directory is empty: take basebackup
     echo "Taking a basebackup from ${MASTER_HOST}..."  1>&2

@@ -1,10 +1,10 @@
 # vim: set filetype=helm: 
 
----
+{{- if .Values.pgpool.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "postgresql-cluster.pgpool.serviceName" . }}
+  name: {{ include "postgresql-cluster.postgres.serviceName" . }}-pgpool
   labels:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
@@ -13,6 +13,7 @@ spec:
   ports:
   - port: 5433
     targetPort: 5433
+{{- end }}{{/* if .Values.pgpool.enabled */}}
 
 ---
 # A headless service that governs the subdomain of the statefulsets (both master and standby)

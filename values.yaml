@@ -95,6 +95,7 @@ postgres:
     prepareData: true
 
 pgpool:
+  enabled: true
   image: 'localhost:5000/pgpool:4.2-alpine'
   imagePullSecrets:
     []

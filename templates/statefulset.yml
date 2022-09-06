@@ -13,7 +13,10 @@
 {{- end }}{{/* if .workMemory */}}
 
 {{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
-{{- $masterHost := printf "%s-master-0.%s" .Release.Name (include "postgresql-cluster.postgres.serviceName" .) -}}
+
+{{- $postgresServiceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{- $postgresServiceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+{{- $masterHost := printf "%s-master-0.%s" .Release.Name $postgresServiceDomain -}}
 
 {{- $configMap := (include (print $.Template.BasePath "/configmaps/config.yml") . | fromYaml) -}}
 

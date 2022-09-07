@@ -12,13 +12,14 @@
 {{- $command = append $command (printf "--work_mem=%s" .Values.postgres.workMemory) -}}
 {{- end }}{{/* if .workMemory */}}
 
-{{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
-
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 {{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
 {{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
-{{- $masterHost := printf "%s-master-0.%s" .Release.Name $serviceDomain -}}
+{{- $masterHost := printf "%s-master-0.%s" $fullname $serviceDomain -}}
 
 {{- $configMap := (include (print $.Template.BasePath "/configmaps/config.yml") . | fromYaml) -}}
+
+{{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
 
 # manifests
 ---
@@ -26,7 +27,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-master
+  name: {{ $fullname }}-master
   labels:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
@@ -92,7 +93,7 @@ spec:
           defaultMode: 0640
       - name: config
         configMap:
-          name: {{ .Release.Name }}-config-generated
+          name: {{ $fullname }}-config-generated
       {{- if .Values.postgres.configurationFrom }}
       - name: config-extra
         configMap:
@@ -100,7 +101,7 @@ spec:
       {{- end }}
       - name: db-init-scripts
         configMap:
-          name: {{ .Release.Name }}-db-init-scripts
+          name: {{ $fullname }}-db-init-scripts
           defaultMode: 0774
       containers:
       - name: postgres
@@ -203,7 +204,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-standby
+  name: {{ $fullname }}-standby
   labels:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
@@ -261,7 +262,7 @@ spec:
           defaultMode: 0640
       - name: config
         configMap:
-          name: {{ .Release.Name }}-config-generated
+          name: {{ $fullname }}-config-generated
       {{- if .Values.postgres.configurationFrom }}
       - name: config-extra
         configMap:
@@ -269,7 +270,7 @@ spec:
       {{- end }}
       - name: scripts
         configMap:
-          name: {{ .Release.Name }}-scripts
+          name: {{ $fullname }}-scripts
           defaultMode: 0774
       - name: pgpass
         emptyDir: {}
@@ -360,7 +361,7 @@ spec:
         volumeMounts:
         - name: archive
           mountPath: /var/backups/postgresql/archive-master
-          subPathExpr: {{ printf "%s-master-0" .Release.Name }}
+          subPathExpr: {{ printf "%s-master-0" $fullname }}
           readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -397,7 +398,7 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: archive
           mountPath: /var/backups/postgresql/archive-master
-          subPathExpr: {{ printf "%s-master-0" .Release.Name }}
+          subPathExpr: {{ printf "%s-master-0" $fullname }}
           readOnly: true
         - name: archive
           mountPath: /var/backups/postgresql/archive

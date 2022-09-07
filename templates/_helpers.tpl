@@ -71,14 +71,16 @@ tier-in-database-cluster: proxy
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.standbyNames" -}}
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 {{- range $i := (until (.Values.postgres.replicas | int)) -}}
-{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($.Release.Name | replace "-" "_") $i -}}
+{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($fullname | replace "-" "_") $i -}}
 {{- end }}{{/* range */}}
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.synchronousStandbyNames" -}}
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 {{- range $i := (until (.Values.postgres.replicasToSync | int)) -}}
-{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($.Release.Name | replace "-" "_") $i -}}
+{{- if gt $i 0 }}{{ print "," }}{{ end }}{{ printf "%s_standby_%d" ($fullname | replace "-" "_") $i -}}
 {{- end }}{{/* range */}}
 {{- end }}
 
@@ -103,31 +105,31 @@ synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "
 {{- end }}
 
 {{- define "postgresql-cluster.postgresPassword.secretName" -}}
-{{ .Values.postgresPassword.secretName | default (printf "%s-postgres-password" .Release.Name) }}
+{{ .Values.postgresPassword.secretName | default (printf "%s-postgres-password" (include "postgresql-cluster.fullname" .)) }}
 {{- end }}
 
 {{- define "postgresql-cluster.replicationPassword.secretName" -}}
-{{ .Values.replicationPassword.secretName | default (printf "%s-replication-password" .Release.Name) }}
+{{ .Values.replicationPassword.secretName | default (printf "%s-replication-password" (include "postgresql-cluster.fullname" .)) }}
 {{- end }}
 
 {{- define "postgresql-cluster.monitorPassword.secretName" -}}
-{{ .Values.monitorPassword.secretName | default (printf "%s-monitor-password" .Release.Name) }}
+{{ .Values.monitorPassword.secretName | default (printf "%s-monitor-password" (include "postgresql-cluster.fullname" .)) }}
 {{- end }}
 
 {{- define "postgresql-cluster.pgpoolAdminPassword.secretName" -}}
-{{ .Values.pgpoolAdminPassword.secretName | default (printf "%s-pgpool-admin-password" .Release.Name) }}
+{{ .Values.pgpoolAdminPassword.secretName | default (printf "%s-pgpool-admin-password" (include "postgresql-cluster.fullname" .)) }}
 {{- end }}
 
 {{- define "postgresql-cluster.userPasswords.secretName" -}}
-{{ .Values.userPasswords.secretName | default (printf "%s-user-passwords" .Release.Name) }}
+{{ .Values.userPasswords.secretName | default (printf "%s-user-passwords" (include "postgresql-cluster.fullname" .)) }}
 {{- end }}
 
 {{- define "postgresql-cluster.tls.secretName" -}}
-{{ .Values.tls.secretName | default (printf "%s-postgres-tls" .Release.Name) }} 
+{{ .Values.tls.secretName | default (printf "%s-postgres-tls" (include "postgresql-cluster.fullname" .)) }} 
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.serviceName" -}}
-{{ .Values.postgres.serviceName | default .Release.Name }} 
+{{ .Values.postgres.serviceName | default (include "postgresql-cluster.fullname" .) }} 
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.serviceDomain" -}}
@@ -135,6 +137,6 @@ synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.archivePvcName" -}}
-{{ printf "archive-%s" .Release.Name }} 
+{{ printf "archive-%s" (include "postgresql-cluster.fullname" .) }} 
 {{- end }}
 

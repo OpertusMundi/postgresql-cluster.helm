@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-config-generated
+  name: {{ include "postgresql-cluster.fullname" . }}-config-generated
 data:
   postgresql.conf: |+
     {{- .Files.Get "files/config/postgresql.conf" | nindent 4 }}

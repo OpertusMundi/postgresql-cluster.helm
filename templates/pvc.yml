@@ -1,10 +1,12 @@
 # vim: set filetype=helm: 
 
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
+
 {{- with .Values.postgres.volumeClaims }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "archive-%s" $.Release.Name }}
+  name: {{ printf "archive-%s" $fullname }}
 spec:
   accessModes:
   - ReadWriteMany

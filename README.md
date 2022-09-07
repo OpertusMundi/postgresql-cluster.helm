@@ -40,9 +40,9 @@ The expected names for PVCs are deterministic (in the case of statefulsets), so 
 
 The PVC names are:
  
- * `data-{{releaseName}}-master-0`: data directory for master (a single instance in the statefulset)
- * `data-{{releaseName}}-standby-{{ordinal}}`: data directory for a standby instance (`ordinal` comes from the statefulset)
- * `archive-{{releaseName}}`:  archive directory where each server (master and standbys) stores WAL segments in a separate subdirectory (named as `$(POD_NAME)`)
+ * `data-{{fullname}}-master-0`: data directory for master (a single instance in the statefulset)
+ * `data-{{fullname}}-standby-{{ordinal}}`: data directory for a standby instance (`ordinal` comes from the statefulset)
+ * `archive-{{fullame}}`:  archive directory where each server (master and standbys) stores WAL segments in a separate subdirectory (named as `$(POD_NAME)`)
 
 An example for providing a PV for master data directory, for a Helm release named `postgres-c1`:
 ```yaml

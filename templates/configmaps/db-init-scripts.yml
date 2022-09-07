@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-db-init-scripts
+  name: {{ include "postgresql-cluster.fullname" . }}-db-init-scripts
 data:
   {{- (.Files.Glob "files/db-init-scripts/*.sh").AsConfig | nindent 2 }}
 

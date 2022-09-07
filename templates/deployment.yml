@@ -1,8 +1,8 @@
 # vim: set filetype=helm: 
 
-{{- $postgresServiceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
-{{- $postgresServiceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
-{{- $masterHost := printf "%s-master-0.%s" .Release.Name $postgresServiceDomain -}}
+{{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+{{- $masterHost := printf "%s-master-0.%s" .Release.Name $serviceDomain -}}
 
 {{- $numOfReplicas := (eq .Values.pgpool.loadBalance "sync" | ternary (int .Values.postgres.replicasToSync) (int .Values.postgres.replicas)) -}}
 
@@ -73,9 +73,9 @@ spec:
         - /opt/wait-for-host.sh
         - --timeout
         - '60'
-        - {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceDomain }}
+        - {{ printf "%s-master-0.%s" $.Release.Name $serviceDomain }}
         {{- range $i := (until $numOfReplicas) }}
-        - {{ printf "%s-standby-%d.%s" $.Release.Name $i $postgresServiceDomain }}
+        - {{ printf "%s-standby-%d.%s" $.Release.Name $i $serviceDomain }}
         {{- end }}{{/* range */}}
         volumeMounts:
         - name: scripts
@@ -107,7 +107,7 @@ spec:
         - name: LOAD_BALANCE
           value: '{{ .Values.pgpool.loadBalance | empty | ternary "off" "on" }}'
         - name: BACKEND_0_HOST
-          value: {{ printf "%s-master-0.%s" $.Release.Name $postgresServiceDomain }}
+          value: {{ printf "%s-master-0.%s" $.Release.Name $serviceDomain }}
         - name: BACKEND_0_WEIGHT
           value: '1'
         - name: BACKEND_0_NAME
@@ -115,7 +115,7 @@ spec:
         {{- if .Values.pgpool.loadBalance }}
         {{- range $i := (until $numOfReplicas) }}
         - name: {{ printf "BACKEND_%d_HOST" ($i| add1) }}
-          value: {{ printf "%s-standby-%d.%s" $.Release.Name $i $postgresServiceDomain }}
+          value: {{ printf "%s-standby-%d.%s" $.Release.Name $i $serviceDomain }}
         - name: {{ printf "BACKEND_%d_WEIGHT" ($i| add1) }}
           value: '1'
         - name: {{ printf "BACKEND_%d_NAME" ($i| add1) }}

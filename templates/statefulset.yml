@@ -14,9 +14,9 @@
 
 {{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
 
-{{- $postgresServiceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
-{{- $postgresServiceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
-{{- $masterHost := printf "%s-master-0.%s" .Release.Name $postgresServiceDomain -}}
+{{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+{{- $masterHost := printf "%s-master-0.%s" .Release.Name $serviceDomain -}}
 
 {{- $configMap := (include (print $.Template.BasePath "/configmaps/config.yml") . | fromYaml) -}}
 
@@ -31,7 +31,7 @@ metadata:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  serviceName: {{ include "postgresql-cluster.postgres.serviceName" . }}
+  serviceName: {{ $serviceName }}
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
@@ -208,7 +208,7 @@ metadata:
     {{- include "postgresql-cluster.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.postgres.replicas }}
-  serviceName: {{ include "postgresql-cluster.postgres.serviceName" . }}
+  serviceName: {{ $serviceName }}
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}

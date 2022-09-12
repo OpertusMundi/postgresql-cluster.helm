@@ -49,25 +49,25 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/* Selector labels for master/standby database Pods (backend) */}}
 {{- define "postgresql-cluster.selectorLabelsForBackend" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
-tier-in-database-cluster: backend
+postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: backend
 {{- end }}
 
 {{/* Selector labels for master Pod */}}
 {{- define "postgresql-cluster.selectorLabelsForMaster" -}}
 {{ include "postgresql-cluster.selectorLabelsForBackend" . }}
-backend-role: master
+postgresql-cluster.opertusmundi.github.io/backend-role: master
 {{- end }}
 
 {{/* Selector labels for standby Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForStandby" -}}
 {{ include "postgresql-cluster.selectorLabelsForBackend" . }}
-backend-role: standby
+postgresql-cluster.opertusmundi.github.io/backend-role: standby
 {{- end }}
 
 {{/* Selector labels for PgPool Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForPgpool" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
-tier-in-database-cluster: proxy
+postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: proxy
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.standbyNames" -}}

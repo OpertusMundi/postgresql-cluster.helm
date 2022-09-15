@@ -162,7 +162,7 @@ spec:
 
 
 ---
-{{- if .Values.psql.enabled -}}
+{{- if .Values.psql.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

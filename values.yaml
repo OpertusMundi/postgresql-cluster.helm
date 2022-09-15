@@ -137,4 +137,7 @@ pgpool:
     initialDelaySeconds: 3
   # the number (>= 0) of PgPool servers to start
   replicas: 1
- 
+
+psql:
+  enabled: true
+

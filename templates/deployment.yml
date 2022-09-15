@@ -3,6 +3,7 @@
 {{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 {{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
 {{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+{{- $clusterDomain := (include "postgresql-cluster.clusterDomain" .) -}}
 {{- $masterHost := printf "%s-master-0.%s" $fullname $serviceDomain -}}
 
 {{- $numOfReplicas := (eq .Values.pgpool.loadBalance "sync" | ternary (int .Values.postgres.replicasToSync) (int .Values.postgres.replicas)) -}}
@@ -13,8 +14,8 @@
 {{ end -}}
 
 # manifests
----
 
+---
 {{- if .Values.pgpool.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -158,3 +159,73 @@ spec:
         {{- toYaml .Values.affinity | nindent 8 }}
         
 {{- end }}{{/* if .Values.pgpool.enabled */}}
+
+
+---
+{{- if .Values.psql.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-psql
+  labels:
+    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForCommandLine" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgresql-cluster.selectorLabelsForCommandLine" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.postgres.securityContext.uid }}
+        runAsGroup: {{ .Values.postgres.securityContext.gid }}
+        fsGroup: {{ .Values.postgres.securityContext.gid }}
+      # shareProcessNamespace because we want SIGTERM to be sent to /pause (as PID 1)
+      shareProcessNamespace: true
+      volumes:
+      - name: pgpass
+        secret:
+          secretName: {{ $fullname }}-pgpass
+          defaultMode: 0640
+      - name: home
+        emptyDir: {}      
+      initContainers:
+      - name: prepare-home
+        image: {{ .Values.postgres.image }}
+        command:
+        - sh
+        args:
+        - -c
+        - |-
+          cp -v /pgpass ${HOME}/.pgpass && chmod -v 0600 ${HOME}/.pgpass
+        volumeMounts:
+        - name: pgpass
+          mountPath: /pgpass
+          subPath: pgpass
+          readOnly: true
+        - name: home
+          mountPath: /var/lib/postgresql
+      containers:
+      - name: curl
+        image: {{ .Values.postgres.image }}
+        env:
+        - name: PGHOST
+          value: {{ $masterHost }}
+        volumeMounts:
+        - name: home
+          mountPath: /var/lib/postgresql
+        command:
+        - sleep
+        - 30d
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 250m
+            memory: 64Mi
+      restartPolicy: Always
+{{ end }}{{/* if .Values.psql.enabled */}}

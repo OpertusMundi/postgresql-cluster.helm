@@ -5,11 +5,11 @@
 postgresql.conf.example
 values-local.yaml
 
-temp/
-data/
-setup/
-certs/
-secrets/
+/temp/
+/data/
+/setup/
+/certs/
+/secrets/
 
 # The context for building PgPool image
 pgpool

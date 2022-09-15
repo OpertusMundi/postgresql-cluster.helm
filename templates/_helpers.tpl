@@ -49,6 +49,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/* Selector labels for master/standby database Pods (backend) */}}
 {{- define "postgresql-cluster.selectorLabelsForBackend" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
+app.kubernetes.io/component: server
 postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: backend
 {{- end }}
 
@@ -67,7 +68,14 @@ postgresql-cluster.opertusmundi.github.io/backend-role: standby
 {{/* Selector labels for PgPool Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForPgpool" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
+app.kubernetes.io/component: server
 postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: proxy
+{{- end }}
+
+{{/* Selector labels for exec Pod (psql) */}}
+{{- define "postgresql-cluster.selectorLabelsForCommandLine" -}}
+{{ include "postgresql-cluster.selectorLabels" . }}
+app.kubernetes.io/component: cli
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.standbyNames" -}}
@@ -132,11 +140,53 @@ synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "
 {{ .Values.postgres.serviceName | default (include "postgresql-cluster.fullname" .) }} 
 {{- end }}
 
+{{- define "postgresql-cluster.clusterDomain" -}}
+{{ printf "%s.svc.cluster.local" .Release.Namespace }}
+{{- end }}
+
 {{- define "postgresql-cluster.postgres.serviceDomain" -}}
-{{  printf "%s.%s.svc.cluster.local" (include "postgresql-cluster.postgres.serviceName" .) .Release.Namespace }} 
+{{- $clusterDomain := (include "postgresql-cluster.clusterDomain" .) -}}
+{{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{ printf "%s.%s" $serviceName $clusterDomain }} 
 {{- end }}
 
 {{- define "postgresql-cluster.postgres.archivePvcName" -}}
 {{ printf "archive-%s" (include "postgresql-cluster.fullname" .) }} 
 {{- end }}
+
+
+{{/* 
+Generate contents of pgpass file 
+*/}}
+{{- define "postgresql-cluster.pgpass" -}}
+
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
+{{- $clusterDomain := (include "postgresql-cluster.clusterDomain" .) -}}
+{{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
+{{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+
+{{- $postgresPasswordSecret := (lookup "v1" "Secret" .Release.Namespace .Values.postgresPassword.secretName) -}}
+{{- if $postgresPasswordSecret }}
+{{- $postgresPassword := ((get $postgresPasswordSecret "data").password) | b64dec }}
+{{ printf "%s-master-0.%s:5432:*:postgres:%s" $fullname $serviceDomain $postgresPassword }}
+{{ range $i := until (int $.Values.postgres.replicas) }}
+{{- printf "%s-standby-%d.%s:5432:*:postgres:%s" $fullname $i $serviceDomain $postgresPassword }}
+{{ end }}{{/* range $i */}}
+{{- end -}}{{/* if $postgresPasswordSecret */}}
+
+{{- $userPasswordsSecret := (lookup "v1" "Secret" .Release.Namespace .Values.userPasswords.secretName) }}
+{{- if $userPasswordsSecret }}
+{{ range $username := keys (get $userPasswordsSecret "data") }}
+{{- $password := (get (get $userPasswordsSecret "data") $username) | b64dec }}
+{{- printf "%s-master-0.%s:5432:*:%s:%s" $fullname $serviceDomain $username $password }}
+{{ range $i := until (int $.Values.postgres.replicas) }}
+{{- printf "%s-standby-%d.%s:5432:*:%s:%s" $fullname $i $serviceDomain $username $password }}
+{{ end -}}{{/* range $i */}}
+{{- if $.Values.pgpool.enabled }}
+{{- printf "%s-pgpool.%s:5433:*:%s:%s" $serviceName $clusterDomain $username $password }}
+{{ end }}{{/* if $.Values.pgpool.enabled */}}
+{{ end }}{{/* range $username */}}
+{{- end }}{{/* if $userPasswordsSecret */}}
+
+{{- end }}{{/* define */}}
 

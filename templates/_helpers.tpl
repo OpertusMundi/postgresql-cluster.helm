@@ -50,26 +50,42 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "postgresql-cluster.selectorLabelsForBackend" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
 app.kubernetes.io/component: server
-postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: backend
+postgresql-cluster.opertusmundi.github.io/tier: backend
 {{- end }}
 
 {{/* Selector labels for master Pod */}}
 {{- define "postgresql-cluster.selectorLabelsForMaster" -}}
 {{ include "postgresql-cluster.selectorLabelsForBackend" . }}
-postgresql-cluster.opertusmundi.github.io/backend-role: master
+postgresql-cluster.opertusmundi.github.io/master: ""
+{{- end }}
+
+{{- define "postgresql-cluster.labelsForMaster" }}
+{{ include "postgresql-cluster.labels" . }}
+postgresql-cluster.opertusmundi.github.io/master: ""
+{{- end }}
+
+{{- define "postgresql-cluster.labelsForStandby" }}
+{{ include "postgresql-cluster.labels" . }}
+postgresql-cluster.opertusmundi.github.io/standby: ""
+{{- end }}
+
+{{- define "postgresql-cluster.labelsForPgpool" }}
+{{ include "postgresql-cluster.labels" . }}
+postgresql-cluster.opertusmundi.github.io/pgpool: ""
 {{- end }}
 
 {{/* Selector labels for standby Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForStandby" -}}
 {{ include "postgresql-cluster.selectorLabelsForBackend" . }}
-postgresql-cluster.opertusmundi.github.io/backend-role: standby
+postgresql-cluster.opertusmundi.github.io/standby: ""
 {{- end }}
 
 {{/* Selector labels for PgPool Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForPgpool" -}}
 {{ include "postgresql-cluster.selectorLabels" . }}
 app.kubernetes.io/component: server
-postgresql-cluster.opertusmundi.github.io/tier-in-database-cluster: proxy
+postgresql-cluster.opertusmundi.github.io/tier: proxy
+postgresql-cluster.opertusmundi.github.io/pgpool: ""
 {{- end }}
 
 {{/* Selector labels for exec Pod (psql) */}}

@@ -82,7 +82,7 @@ The labels requested for the PVC for the data directory for the master (and simi
 ```yaml
 app.kubernetes.io/name: postgresql-cluster
 app.kubernetes.io/instance: {{releaseName}}
-postgresql-cluster.opertusmundi.github.io/backend-role: master
+postgresql-cluster.opertusmundi.github.io/master: ""
 ```
 
 The labels requested for the PVC for the archive directory:

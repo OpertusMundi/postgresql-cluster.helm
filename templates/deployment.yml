@@ -209,7 +209,7 @@ spec:
         - name: home
           mountPath: /var/lib/postgresql
       containers:
-      - name: curl
+      - name: psql
         image: {{ .Values.postgres.image }}
         env:
         - name: PGHOST

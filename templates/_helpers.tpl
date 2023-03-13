@@ -64,6 +64,12 @@ postgresql-cluster.opertusmundi.github.io/master: ""
 postgresql-cluster.opertusmundi.github.io/master: ""
 {{- end }}
 
+{{/* Selector labels for master data PV  */}}
+{{- define "postgresql-cluster.selectorLabelsForMasterData" -}}
+{{ include "postgresql-cluster.selectorLabels" . }}
+postgresql-cluster.opertusmundi.github.io/master: ""
+{{- end }}
+
 {{- define "postgresql-cluster.labelsForStandby" }}
 {{ include "postgresql-cluster.labels" . }}
 postgresql-cluster.opertusmundi.github.io/standby: ""
@@ -77,6 +83,12 @@ postgresql-cluster.opertusmundi.github.io/pgpool: ""
 {{/* Selector labels for standby Pod(s) */}}
 {{- define "postgresql-cluster.selectorLabelsForStandby" -}}
 {{ include "postgresql-cluster.selectorLabelsForBackend" . }}
+postgresql-cluster.opertusmundi.github.io/standby: ""
+{{- end }}
+
+{{/* Selector labels for standby data PV  */}}
+{{- define "postgresql-cluster.selectorLabelsForStandbyData" -}}
+{{ include "postgresql-cluster.selectorLabels" . }}
 postgresql-cluster.opertusmundi.github.io/standby: ""
 {{- end }}
 

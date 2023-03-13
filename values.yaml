@@ -54,7 +54,11 @@ postgres:
     dataDir:
       size: 256Mi
       # define the storage class for data directories
+      # note:  the corresponding PVC will require ReadWriteOnce access mode for the PV
       storageClassName: local-1
+      # should we define a selector on the PVC? 
+      # if not, binding only works by specifying a claimRef on the PV (or will dynamic provisioning)
+      useSelector: true
       extraMatchLabels:
         {}
     archiveDir: 
@@ -62,6 +66,7 @@ postgres:
       # define the storage class for archive directory
       # note: the corresponding PVC will require ReadWriteMany access mode for the PV
       storageClassName: nfs-1
+      useSelector: true
       extraMatchLabels: 
         {}
   # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS

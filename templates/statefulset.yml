@@ -48,11 +48,12 @@ spec:
       resources:
         requests:
           storage: {{ .dataDir.size }}
+      {{- if .dataDir.useSelector }}
       selector:
         matchLabels:
-          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
-          backend-role: master
+          {{- include "postgresql-cluster.selectorLabelsForMasterData" $ | nindent 10 }}  
           {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
+      {{- end }}{{/* if .dataDir.useSelector */}}
   {{- end }}
   # Pod template
   template:
@@ -225,11 +226,12 @@ spec:
       resources:
         requests:
           storage: {{ .dataDir.size }}
+      {{- if .dataDir.useSelector }}
       selector:
         matchLabels:
-          {{- include "postgresql-cluster.selectorLabels" $ | nindent 10 }}  
-          backend-role: standby
+          {{- include "postgresql-cluster.selectorLabelsForStandbyData" $ | nindent 10 }}  
           {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
+      {{- end }}{{/* if .dataDir.useSelector */}}
   {{- end }}
   # Pod template
   template:

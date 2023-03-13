@@ -15,8 +15,10 @@ spec:
       storage: {{ .archiveDir.size }}
   storageClassName: {{ .archiveDir.storageClassName }}
   volumeMode: Filesystem
+  {{- if .archiveDir.useSelector }}
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabels" $ | nindent 6 }}  
       {{- if .archiveDir.extraMatchLabels }}{{ toYaml .archiveDir.extraMatchLabels | nindent 6 }}{{- end }}
+  {{- end }}{{/* if .archiveDir.useSelector */}}
 {{- end }}{{/* with .Values.postgres.volumeClaims */}}

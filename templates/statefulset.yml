@@ -29,7 +29,7 @@ kind: StatefulSet
 metadata:
   name: {{ $fullname }}-master
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForMaster" . | nindent 4 }}
 spec:
   replicas: 1
   serviceName: {{ $serviceName }}
@@ -206,7 +206,7 @@ kind: StatefulSet
 metadata:
   name: {{ $fullname }}-standby
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForStandby" . | nindent 4 }}
 spec:
   replicas: {{ .Values.postgres.replicas }}
   serviceName: {{ $serviceName }}

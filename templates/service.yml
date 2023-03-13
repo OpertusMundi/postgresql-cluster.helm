@@ -6,7 +6,7 @@ kind: Service
 metadata:
   name: {{ include "postgresql-cluster.postgres.serviceName" . }}-pgpool
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForPgpool" . | nindent 4 }}
 spec:
   selector: 
     {{- include "postgresql-cluster.selectorLabelsForPgpool" . | nindent 4 }} 
@@ -38,7 +38,7 @@ kind: Service
 metadata:
   name: {{ include "postgresql-cluster.postgres.serviceName" . }}-master
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForMaster" . | nindent 4 }}
 spec:
   selector: 
     {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 4 }} 
@@ -55,7 +55,7 @@ kind: Service
 metadata:
   name: {{ include "postgresql-cluster.postgres.serviceName" . }}-standby
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForStandby" . | nindent 4 }}
 spec:
   selector: 
     {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 4 }} 

@@ -22,7 +22,7 @@ kind: Deployment
 metadata:
   name: {{ $fullname }}-pgpool
   labels:
-    {{- include "postgresql-cluster.labels" . | nindent 4 }}
+    {{- include "postgresql-cluster.labelsForPgpool" . | nindent 4 }}
 spec:
   replicas: {{ .Values.pgpool.replicas }}
   selector:

@@ -103,6 +103,17 @@ synchronous_standby_names = {{ printf "FIRST %d (%s)" $replicasToSync (include "
 {{- end -}}{{/*if*/}}
 {{- end }}
 
+{{- define "postgresql-cluster.postgres.configurationStanzaForReplicationInStandby" -}}
+{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
+{{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
+{{- $masterHost := (printf "%s-master-0.%s" $fullname $serviceDomain) -}}
+include_if_exists = '/var/lib/postgresql/data/01-cluster-name.conf'
+primary_conninfo = {{ printf "user=replicator host=%s port=5432 sslmode=prefer sslcompression=0" $masterHost | squote }}
+restore_command = 'cp -v /var/backups/postgresql/archive-master/%f %p'
+promote_trigger_file = 'trigger-failover'
+recovery_target_timeline = 'latest'
+{{- end }}
+
 {{/* Create the name of the service account to use */}}
 {{- define "postgresql-cluster.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}

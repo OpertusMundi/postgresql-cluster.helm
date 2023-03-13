@@ -12,4 +12,5 @@ data:
   replication-for-master.conf: |+
     {{- include "postgresql-cluster.postgres.configurationStanzaForReplicationInMaster" . | nindent 4 }}
   replication-for-standby.conf: |+
+    {{- include "postgresql-cluster.postgres.configurationStanzaForReplicationInStandby" . | nindent 4 }}
 

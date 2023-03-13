@@ -54,6 +54,8 @@ spec:
         secret:
           secretName: {{ include "postgresql-cluster.userPasswords.secretName" . }}
           defaultMode: 0640
+      - name: pool-passwd
+        emptyDir: {}
       - name: tls
         secret:
           secretName: {{ include "postgresql-cluster.tls.secretName" . }} 
@@ -67,6 +69,8 @@ spec:
             path: wait-for-host.sh
           - key: check-status-of-primary-node.sh
             path: check-status-of-primary-node.sh
+          - key: generate-pool-passwd.sh
+            path: generate-pool-passwd.sh
       initContainers: 
       - name: wait-for-backend
         image: busybox:1
@@ -83,21 +87,45 @@ spec:
         - name: scripts
           mountPath: /opt/
           readOnly: true
+      - name: generate-pool-passwd
+        image: {{ .Values.pgpool.image }}
+        imagePullPolicy: IfNotPresent
+        command:
+        - su-exec
+        - postgres
+        - /opt/generate-pool-passwd.sh
+        - -i
+        - /secrets/users
+        - -o
+        - /var/lib/pgpool/pool-passwd
+        volumeMounts:
+        - name: scripts
+          mountPath: /opt/
+          readOnly: true
+        - name: user-passwords
+          mountPath: /secrets/users
+          readOnly: true
+        - name: pool-passwd
+          mountPath: /var/lib/pgpool/pool-passwd
       containers:
       - image: {{ .Values.pgpool.image }}
         imagePullPolicy: IfNotPresent
         name: pgpool
         env:
+        - name: POOL_PASSWD_FILE
+          value: /var/lib/pgpool/pool-passwd/pool_passwd
+        - name: PGPOOLKEYFILE
+          value: /var/lib/pgpool/pool-passwd/key
         - name: PGPOOL_ADMIN_PASSWORD_FILE
           value: /secrets/pgpool-admin-password/password
         - name: MONITOR_PASSWORD_FILE
           value: /secrets/monitor-password/password
-        - name: USER_PASSWORDS_DIR
-          value: /secrets/users
         - name: TLS_KEY_FILE
           value: /certs/tls.key
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
+        - name: AUTH_METHOD
+          value: scram-sha-256 
         - name: NUM_PROCS
           value: '{{ .Values.pgpool.numProcs }}'
         - name: POOL_SIZE
@@ -131,8 +159,8 @@ spec:
         - name: monitor-password
           mountPath: /secrets/monitor-password
           readOnly: true
-        - name: user-passwords
-          mountPath: /secrets/users
+        - name: pool-passwd
+          mountPath: /var/lib/pgpool/pool-passwd
           readOnly: true
         - name: tls
           mountPath: /certs
@@ -162,7 +190,7 @@ spec:
 
 
 ---
-{{- if .Values.psql.enabled -}}
+{{- if .Values.psql.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -209,7 +237,7 @@ spec:
         - name: home
           mountPath: /var/lib/postgresql
       containers:
-      - name: curl
+      - name: psql
         image: {{ .Values.postgres.image }}
         env:
         - name: PGHOST
@@ -219,7 +247,7 @@ spec:
           mountPath: /var/lib/postgresql
         command:
         - sleep
-        - 30d
+        - infinity
         resources:
           limits:
             cpu: 500m

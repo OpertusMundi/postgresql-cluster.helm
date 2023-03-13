@@ -31,21 +31,51 @@ function _gen_configuration_for_backend()
     done
 }
 
+function _gen_user_passwords_file()
+{
+    # Generate pairs of user:password
+    user_passwords_dir=${USER_PASSWORDS_DIR%/}
+    for f in ${user_passwords_dir}/*
+    do
+        echo "$(basename ${f}):$(cat ${f})"; 
+    done
+}
+
+#
 # Check environment
+#
 
 if [ ! -f "${PGPOOL_ADMIN_PASSWORD_FILE}" ]; then
     echo "The file with the admin password for PgPool (PGPOOL_ADMIN_PASSWORD_FILE) is missing!" 1>&2
     exit 1
 fi
 
+auth_methods=( "md5" "scram-sha-256" )
+grep -w -q -F -e "${AUTH_METHOD}" < <(echo "${auth_methods[*]}")
+
+if [ "${AUTH_METHOD}" == 'scram-sha-256' ] && [ ! -f "${PGPOOLKEYFILE}" ]; then
+    echo "PGPOOLKEYFILE file (${PGPOOLKEYFILE}) is missing!" 1>&2
+    exit 1
+fi
+
+#
 # Generate credentials for management interface (pcp.conf)
+#
 
 pgpool_admin_password=$(cat ${PGPOOL_ADMIN_PASSWORD_FILE})
 
 echo "${PGPOOL_ADMIN_USER}:"$(pg_md5 "${pgpool_admin_password}") >> /var/lib/pgpool/pcp.conf
 
-echo "*:*:${PGPOOL_ADMIN_USER}:${pgpool_admin_password}" > ~/.pcppass
+echo "*:*:${PGPOOL_ADMIN_USER}:${pgpool_admin_password}" | tee ~/.pcppass > ~postgres/.pcppass
 chmod u=rw,g=,o= ~/.pcppass
+chown postgres:postgres ~postgres/.pcppass && chmod u=rw,g=,o= ~postgres/.pcppass
+
+
+#
+# Generate entry for pool_hba.conf depending on auth method
+#
+
+echo "hostssl all all all ${AUTH_METHOD}" >> ${POOL_HBA_FILE}
 
 #
 # Generate pool_passwd from directory of user credentials
@@ -55,9 +85,13 @@ if [ ! -f ${POOL_PASSWD_FILE} ]; then
     touch ${POOL_PASSWD_FILE} 
     chown root:postgres ${POOL_PASSWD_FILE} && chmod g=r,o= ${POOL_PASSWD_FILE}
     if [ -d "${USER_PASSWORDS_DIR}" ]; then
-        for username in  $(ls -1 ${USER_PASSWORDS_DIR}); do
-            pg_md5 --md5auth --username ${username} "$(cat ${USER_PASSWORDS_DIR%/}/${username})"
-        done
+        user_passwords_file=$(mktemp -t user-passwords-XXXXXX)
+        _gen_user_passwords_file > ${user_passwords_file}
+        if [ "${AUTH_METHOD}" == "scram-sha-256" ]; then
+            pg_enc -m -i ${user_passwords_file}
+        else
+            pg_md5 -m -i ${user_passwords_file}
+        fi
     fi
 fi
 

@@ -342,35 +342,20 @@ spec:
           mountPath: /opt/
           readOnly: true
       {{- end }}{{/* if .Values.postgres.standby.prepareData */}}
-      - name: generate-recovery-conf
-        image: "{{ .Values.postgres.image }}"
-        env:
-        - name: REPLICATION_USER
-          value: replicator
-        - name: REPLICATION_PASSWORD_FILE
-          value: /secrets/replication-password/password
-        - name: MASTER_HOST
-          value: {{ $masterHost }}
-        - name: ARCHIVE_MASTER_DIR
-          value: /var/backups/postgresql/archive-master
-        command: 
+      - name: generate-name
+        image:  "{{ .Values.postgres.image }}"
+        imagePullPolicy: IfNotPresent
+        {{/*- see https://www.postgresql.org/docs/current/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES -*/}}
+        command:
         - su-exec
         - postgres
-        - /opt/generate-recovery-conf.sh
-        - --force
+        - bash
+        - -c
+        - |-
+          printf "cluster_name = '%s'\n" ${HOSTNAME//-/_} > ${PGDATA}/01-cluster-name.conf
         volumeMounts:
-        - name: archive
-          mountPath: /var/backups/postgresql/archive-master
-          subPathExpr: {{ printf "%s-master-0" $fullname }}
-          readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
-        - name: replication-password
-          mountPath: /secrets/replication-password
-          readOnly: true
-        - name: scripts
-          mountPath: /opt/
-          readOnly: true
       containers: 
       - name: postgres
         image: "{{ .Values.postgres.image }}"
@@ -393,6 +378,8 @@ spec:
           value: /certs/tls.key
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
+        - name: PGPASSFILE
+          value: /etc/postgresql/pgpass/.pgpass
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -417,6 +404,8 @@ spec:
           mountPath: /etc/postgresql/pg_hba.conf
           subPath: pg_hba.conf
           readOnly: true
+        - name: pgpass
+          mountPath: /etc/postgresql/pgpass 
         - name: config
           mountPath: /etc/postgresql/conf.d/01-replication.conf
           subPath: replication-for-standby.conf

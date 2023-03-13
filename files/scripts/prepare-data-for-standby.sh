@@ -19,3 +19,5 @@ else
     echo "Taking a basebackup from ${MASTER_HOST}..."  1>&2
     pg_basebackup -v --checkpoint=fast -h ${MASTER_HOST} -U ${REPLICATION_USER} -D ${PGDATA}
 fi
+
+touch ${PGDATA}/standby.signal

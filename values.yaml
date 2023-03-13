@@ -40,8 +40,8 @@ tls:
   secretName:  
 
 postgres:
-  image: 'postgres:10.14-alpine'
-  #image: 'postgis/postgis:10-3.0-alpine'
+  image: 'postgres:15.2-alpine'
+  #image: 'postgis/postgis:15-3.3-alpine'
   podAnnotations: {}
   # The name of the headless service governing the network id of stateful sets
   serviceName:
@@ -140,4 +140,5 @@ pgpool:
 
 psql:
   enabled: true
+  image: 'postgres:15.2-alpine'
 

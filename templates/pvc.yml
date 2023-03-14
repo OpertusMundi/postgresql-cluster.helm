@@ -7,6 +7,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ printf "archive-%s" $fullname }}
+  annotations:
+    {{/* https://github.com/helm/helm/issues/6261#issuecomment-523472128 */}}
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
   - ReadWriteMany

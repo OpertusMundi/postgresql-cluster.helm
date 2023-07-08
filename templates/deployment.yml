@@ -256,4 +256,8 @@ spec:
             cpu: 250m
             memory: 64Mi
       restartPolicy: Always
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
 {{ end }}{{/* if .Values.psql.enabled */}}

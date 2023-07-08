@@ -89,7 +89,7 @@ spec:
           readOnly: true
       - name: generate-pool-passwd
         image: {{ .Values.pgpool.image }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.pgpool.imagePullPolicy }}
         command:
         - su-exec
         - postgres
@@ -109,7 +109,7 @@ spec:
           mountPath: /var/lib/pgpool/pool-passwd
       containers:
       - image: {{ .Values.pgpool.image }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.pgpool.imagePullPolicy }}
         name: pgpool
         env:
         - name: POOL_PASSWD_FILE

@@ -101,7 +101,8 @@ postgres:
 
 pgpool:
   enabled: true
-  image: 'localhost:5000/pgpool:4.2-alpine'
+  image: 'ghcr.io/opertusmundi/pgpool:4-alpine'
+  imagePullPolicy: IfNotPresent
   imagePullSecrets:
     []
   podAnnotations: {}
@@ -145,5 +146,4 @@ pgpool:
 
 psql:
   enabled: true
-  image: 'postgres:15.2-alpine'
 

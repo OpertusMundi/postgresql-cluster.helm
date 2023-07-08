@@ -1,4 +1,4 @@
-FROM alpine:3.15
+FROM alpine:3.18
 
 RUN apk update && apk add --no-cache pgpool su-exec bash
 
@@ -14,7 +14,7 @@ ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
     PGPOOL_ADMIN_USER="pgpool" \
     PGPOOL_ADMIN_PASSWORD_FILE="/secrets/pgpool-admin-password" \
     PGPOOLKEYFILE="/secrets/pgpool-key" \
-    AUTH_METHOD="scram-sha-256" \
+    AUTH_METHOD="md5" \
     MONITOR_USER="monitor" \
     MONITOR_PASSWORD_FILE="/secrets/monitor-password" \
     USER_PASSWORDS_DIR="/secrets/users/" \

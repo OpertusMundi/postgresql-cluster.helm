@@ -2,6 +2,8 @@
 set -e -u
 set -x
 
+test -d "${PGPOOL_CONFIG_DIR}"
+
 output_dir=
 input_dir=
 key_file=${PGPOOLKEYFILE:-}
@@ -48,6 +50,6 @@ pg_enc -k ${key_file} -m -i ${user_passwords_file}
 
 if [ -n "${output_dir}" ] && [ -d ${output_dir} ]; then 
     cp -vn ${key_file} ${output_dir}/key
-    cp -vn /etc/pgpool/pool_passwd ${output_dir}/pool_passwd
+    cp -vn ${PGPOOL_CONFIG_DIR}/pool_passwd ${output_dir}/pool_passwd
     chmod -v 0600 ${output_dir}/*
 fi

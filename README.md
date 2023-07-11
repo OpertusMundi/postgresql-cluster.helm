@@ -8,12 +8,12 @@ A Helm chart for a PostgreSQL cluster with a PgPool frontend.
 
 Build and tag the image for PgPool. Say, for example, we tag the image as `registry.internal:5000/pgpool:4`:
 
-    docker build ./pgpool -f pgpool/Dockerfile -t registry.internal:5000/pgpool:4
+    docker build ./pgpool/redhat/ -f pgpool/redhat/Dockerfile -t registry.internal:5000/pgpool:4
 
 Push the image to the respective registry:
 
     docker push registry.internal:5000/pgpool:4
- 
+
 ### 1.2. Configure the Helm chart
 
 Create a YAML file, say `values-local.yml`, to provide or override values from `values.yml`.

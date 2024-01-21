@@ -30,7 +30,7 @@ If release name contains chart name it will be used as a full name.
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/* Common labels */}}
+{{/* Common labels for managed resources */}}
 {{- define "postgresql-cluster.labels" -}}
 helm.sh/chart: {{ include "postgresql-cluster.chart" . }}
 {{ include "postgresql-cluster.selectorLabels" . }}
@@ -38,6 +38,12 @@ helm.sh/chart: {{ include "postgresql-cluster.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/* Common labels for hook resources */}}
+{{- define "postgresql-cluster.hookLabels" -}}
+app.kubernetes.io/name: {{ include "postgresql-cluster.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/* Common selector labels */}}
@@ -193,39 +199,10 @@ recovery_target_timeline = 'latest'
 {{ printf "archive-%s" (include "postgresql-cluster.fullname" .) }} 
 {{- end }}
 
-
-{{/* 
-Generate contents of pgpass file 
-*/}}
-{{- define "postgresql-cluster.pgpass" -}}
-
-{{- $fullname := (include "postgresql-cluster.fullname" .) -}}
-{{- $clusterDomain := (include "postgresql-cluster.clusterDomain" .) -}}
-{{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
-{{- $serviceDomain := (include "postgresql-cluster.postgres.serviceDomain" .) -}}
-
-{{- $postgresPasswordSecret := (lookup "v1" "Secret" .Release.Namespace .Values.postgresPassword.secretName) -}}
-{{- if $postgresPasswordSecret }}
-{{- $postgresPassword := ((get $postgresPasswordSecret "data").password) | b64dec }}
-{{ printf "%s-master-0.%s:5432:*:postgres:%s" $fullname $serviceDomain $postgresPassword }}
-{{ range $i := until (int $.Values.postgres.replicas) }}
-{{- printf "%s-standby-%d.%s:5432:*:postgres:%s" $fullname $i $serviceDomain $postgresPassword }}
-{{ end }}{{/* range $i */}}
-{{- end -}}{{/* if $postgresPasswordSecret */}}
-
-{{- $userPasswordsSecret := (lookup "v1" "Secret" .Release.Namespace .Values.userPasswords.secretName) }}
-{{- if $userPasswordsSecret }}
-{{ range $username := keys (get $userPasswordsSecret "data") }}
-{{- $password := (get (get $userPasswordsSecret "data") $username) | b64dec }}
-{{- printf "%s-master-0.%s:5432:*:%s:%s" $fullname $serviceDomain $username $password }}
-{{ range $i := until (int $.Values.postgres.replicas) }}
-{{- printf "%s-standby-%d.%s:5432:*:%s:%s" $fullname $i $serviceDomain $username $password }}
-{{ end -}}{{/* range $i */}}
-{{- if $.Values.pgpool.enabled }}
-{{- printf "%s-pgpool.%s:5433:*:%s:%s" $serviceName $clusterDomain $username $password }}
-{{ end }}{{/* if $.Values.pgpool.enabled */}}
-{{ end }}{{/* range $username */}}
-{{- end }}{{/* if $userPasswordsSecret */}}
-
+{{/* Annotations for generated passwords */}}
+{{- define "postgresql-cluster.hookAnnotationsForPassword" -}}
+helm.sh/hook: pre-install
+helm.sh/hook-weight: "-3"
+helm.sh/hook-delete-policy: hook-failed
 {{- end }}{{/* define */}}
 

@@ -1,0 +1,27 @@
+# vim: set filetype=helm:
+
+{{- if .Values.tls.issuerName }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "postgresql-cluster.fullname" . }}-postgres-server
+  labels: 
+    {{- include "postgresql-cluster.hookLabels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+spec:
+  secretName: {{ include "postgresql-cluster.tls.secretName" . }}
+  duration: {{ printf "%dh" (mul (.Values.tls.certificate.numDays | default 365) 24) }}
+  commonName: {{ include "postgresql-cluster.postgres.serviceDomain" . }}
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+  - server auth
+  issuerRef:
+    name: {{ .Values.tls.issuerName }}
+    kind: Issuer
+{{- end }}{{/* if .Values.tls.issuerName */}}

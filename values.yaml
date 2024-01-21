@@ -17,27 +17,36 @@ podAnnotations: {}
 # The secret holding the password of `postgres` user (the administrator)
 postgresPassword:
   secretName:
+  generatePassword: false
 
 # The secret holding the password of the replication-charged user (named as `replicator`)
 replicationPassword:
   secretName:
+  generatePassword: false
 
 # The secret holding the password of a monitoring-charged user (named as `monitor`, member of `pg_monitor` group)
 monitorPassword:
   secretName:
+  generatePassword: false
 
 # The secret holding the password of `pgpool` user (the administrator) for PgPool 
 pgpoolAdminPassword:
   secretName:
+  generatePassword: false
 
 # The secret holding a list of items of user credentials (used by PgPool to authenticate clients).
-# Each item is named with the username and contains the password. 
+# Each item is named with the username and contains the password.
 userPasswords:
   secretName:
 
 # The secret holding the TLS key/certificate for PostgreSQL/PgPool servers
 tls:
-  secretName:  
+  secretName:
+  # if not empty, request the TLS certificate from the given issuer (on pre-{install,upgrade} phase)
+  issuerName:
+  certificate:
+    # number of days to make a TLS certificate valid for (meaningful only if issuer is given)
+    numDays: 730  
 
 postgres:
   image: 'postgres:15.2-alpine'

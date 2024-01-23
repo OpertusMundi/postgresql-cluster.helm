@@ -195,10 +195,8 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
-      nodeSelector:
-        {{- toYaml .Values.nodeSelector | nindent 8 }}
       affinity:
-        {{- toYaml .Values.affinity | nindent 8 }}
+        {{- toYaml (.Values.postgres.master.affinity | default .Values.affinity) | nindent 8 }}
 
 
 ---
@@ -434,7 +432,5 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
-      nodeSelector:
-        {{- toYaml .Values.nodeSelector | nindent 8 }}
       affinity:
-        {{- toYaml .Values.affinity | nindent 8 }}
+        {{- toYaml (.Values.postgres.standby.affinity | default .Values.affinity) | nindent 8 }}

@@ -48,6 +48,9 @@ tls:
     # number of days to make a TLS certificate valid for (meaningful only if issuer is given)
     numDays: 730  
 
+# Affinity for all servers (unless a more specific affinity is defined)
+affinity: ~
+
 postgres:
   image: 'postgres:15.2-alpine'
   #image: 'postgis/postgis:15-3.3-alpine'
@@ -105,7 +108,10 @@ postgres:
   # The number of synchronous standbys (<= .replicas). If zero, all standbys will be asynchronous.
   # see also: https://www.postgresql.org/docs/10/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES
   replicasToSync: 0
+  master:
+    affinity:
   standby:
+    affinity:
     prepareData: true
 
 pgpool:

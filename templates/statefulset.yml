@@ -36,7 +36,7 @@ spec:
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
-  {{- with .Values.postgres.volumeClaims }}
+  {{- with .Values.postgres.pv }}
   volumeClaimTemplates:
   # PVC template for data directory
   - metadata:
@@ -140,6 +140,7 @@ spec:
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
+          subPath: {{ .Values.postgres.pv.dataDir.subPath }}
         - name: archive
           mountPath: /var/backups/postgresql/archive
           subPathExpr: $(POD_NAME)
@@ -212,7 +213,7 @@ spec:
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}
-  {{- with .Values.postgres.volumeClaims }}
+  {{- with .Values.postgres.pv }}
   volumeClaimTemplates:
   # PVC template for data directory
   - metadata:
@@ -383,6 +384,7 @@ spec:
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
+          subPath: {{ .Values.postgres.pv.dataDir.subPath }}
         - name: archive
           mountPath: /var/backups/postgresql/archive-master
           subPathExpr: {{ printf "%s-master-0" $fullname }}

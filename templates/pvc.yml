@@ -2,7 +2,7 @@
 
 {{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 
-{{- with .Values.postgres.volumeClaims }}
+{{- with .Values.postgres.pv }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -24,4 +24,4 @@ spec:
       {{- include "postgresql-cluster.selectorLabels" $ | nindent 6 }}  
       {{- if .archiveDir.extraMatchLabels }}{{ toYaml .archiveDir.extraMatchLabels | nindent 6 }}{{- end }}
   {{- end }}{{/* if .archiveDir.useSelector */}}
-{{- end }}{{/* with .Values.postgres.volumeClaims */}}
+{{- end }}{{/* with .Values.postgres.pv */}}

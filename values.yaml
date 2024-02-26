@@ -62,7 +62,7 @@ postgres:
     # (it depends on the image used, e.g. is different in alpine/ubuntu variants) 
     uid: 70
     gid: 70 
-  volumeClaims:
+  pv:
     dataDir:
       size: 256Mi
       # define the storage class for data directories
@@ -73,6 +73,8 @@ postgres:
       useSelector: true
       extraMatchLabels:
         {}
+      # subPath on the data volume to be mounted as a data directory
+      subPath:
     archiveDir: 
       size: 256Mi
       # define the storage class for archive directory

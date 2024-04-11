@@ -23,5 +23,5 @@ spec:
   - server auth
   issuerRef:
     name: {{ .Values.tls.issuerName }}
-    kind: Issuer
+    kind: {{ .Values.tls.issuerKind | default("Issuer") }}
 {{- end }}{{/* if .Values.tls.issuerName */}}

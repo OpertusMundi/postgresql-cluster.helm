@@ -44,6 +44,8 @@ tls:
   secretName:
   # if not empty, request the TLS certificate from the given issuer (on pre-{install,upgrade} phase)
   issuerName:
+  # the kind of certificate issuer: ClusterIssuer, Issuer (meaningful only if issuer is given) 
+  issuerKind: Issuer
   certificate:
     # number of days to make a TLS certificate valid for (meaningful only if issuer is given)
     numDays: 730  

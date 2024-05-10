@@ -162,6 +162,8 @@ pgpool:
     initialDelaySeconds: 3
   # the number (>= 0) of PgPool servers to start
   replicas: 1
+  # should we allow non-SSL clients?
+  allowNonSSL: false
 
 psql:
   enabled: true

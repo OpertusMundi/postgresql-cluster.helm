@@ -78,7 +78,12 @@ chown postgres:postgres ~postgres/.pcppass && chmod u=rw,g=,o= ~postgres/.pcppas
 # Generate entry for pool_hba.conf depending on auth method
 #
 
-echo "hostssl all all all ${AUTH_METHOD}" >> ${POOL_HBA_FILE}
+client_connection_type="hostssl" # allow only SSL clients
+if [ ${POOL_HBA_ALLOW_NON_SSL} == "on" ]; then
+    client_connection_type="host"
+fi
+
+echo "${client_connection_type} all all all ${AUTH_METHOD}" >> ${POOL_HBA_FILE}
 
 #
 # Generate pool_passwd from directory of user credentials

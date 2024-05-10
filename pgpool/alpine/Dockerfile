@@ -10,6 +10,7 @@ COPY --chown=root:postgres pool_hba.conf pgpool.conf.template /etc/pgpool/
 
 ENV POOL_PASSWD_FILE="/etc/pgpool/pool_passwd" \
     POOL_HBA_FILE="/etc/pgpool/pool_hba.conf" \
+    POOL_HBA_ALLOW_NON_SSL="off" \
     PCP_SOCKET_DIR="/var/run/pgpool" \
     PGPOOL_ADMIN_USER="pgpool" \
     PGPOOL_ADMIN_PASSWORD_FILE="/secrets/pgpool-admin-password" \

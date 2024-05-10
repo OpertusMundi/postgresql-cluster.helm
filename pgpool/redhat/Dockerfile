@@ -21,6 +21,7 @@ COPY --chown=postgres:postgres pool_hba.conf pgpool.conf.template /etc/pgpool-II
 
 ENV POOL_PASSWD_FILE="/etc/pgpool-II/pool_passwd" \
     POOL_HBA_FILE="/etc/pgpool-II/pool_hba.conf" \
+    POOL_HBA_ALLOW_NON_SSL="off" \
     PCP_SOCKET_DIR="/var/run/pgpool" \
     PGPOOL_CONFIG_DIR="/etc/pgpool-II" \
     PGPOOL_ADMIN_USER="pgpool" \

@@ -126,6 +126,10 @@ spec:
           value: /certs/tls.crt
         - name: AUTH_METHOD
           value: scram-sha-256 
+        {{- if .Values.pgpool.allowNonSSL }}
+        - name: POOL_HBA_ALLOW_NON_SSL
+          value: 'on'
+        {{- end }}{{/* if .Values.pgpool.allowNonSSL */}}
         - name: NUM_PROCS
           value: '{{ .Values.pgpool.numProcs }}'
         - name: POOL_SIZE

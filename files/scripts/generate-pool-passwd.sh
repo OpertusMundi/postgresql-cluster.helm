@@ -36,7 +36,7 @@ user_passwords_dir=${input_dir%%/}
 user_passwords_file=$(mktemp -t user-passwords-XXXXXX)
 for f in ${user_passwords_dir}/*
 do
-    echo "$(basename ${f}):$(cat ${f})"; 
+    echo "$(basename ${f}):$(cat ${f})";
 done > ${user_passwords_file}
 
 # if key file missing, generate from /dev/urandom
@@ -48,7 +48,7 @@ fi
 
 pg_enc -k ${key_file} -m -i ${user_passwords_file}
 
-if [ -n "${output_dir}" ] && [ -d ${output_dir} ]; then 
+if [ -n "${output_dir}" ] && [ -d ${output_dir} ]; then
     cp -vn ${key_file} ${output_dir}/key
     cp -vn ${PGPOOL_CONFIG_DIR}/pool_passwd ${output_dir}/pool_passwd
     chmod -v 0600 ${output_dir}/*

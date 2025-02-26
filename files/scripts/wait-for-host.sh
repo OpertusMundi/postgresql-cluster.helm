@@ -10,16 +10,16 @@ set -- ${options}
 
 while [ ${#} -gt "0" ]; do
     case ${1} in
-    --interval) 
+    --interval)
       interval="${2}"; shift;;
     --timeout)
       timeout="${2}"; shift;;
-    (--) 
+    (--)
       shift; break;;
-    (-*) 
-      echo "${0}: error - unrecognized option ${1}" 1>&2; 
+    (-*)
+      echo "${0}: error - unrecognized option ${1}" 1>&2;
       exit 1;;
-    (*) 
+    (*)
       break;;
     esac
     shift
@@ -31,6 +31,6 @@ n=$((${timeout} / ${interval}))
 for host in ${@}; do
     while ! ping -q -c 1 ${host}; do
        sleep ${interval} && n=$((n - 1))
-       test ${n} -ne "0" 
+       test ${n} -ne "0"
     done
 done

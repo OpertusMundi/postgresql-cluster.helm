@@ -117,6 +117,8 @@ postgres:
   standby:
     affinity:
     prepareData: true
+    # Run pg_rewind, if data directory not empty (meaningful only if `prepareData` is true)
+    rewind: false
 
 pgpool:
   enabled: true

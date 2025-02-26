@@ -329,6 +329,8 @@ spec:
           value: replicator
         - name: MASTER_HOST
           value: {{ $masterHost }}
+        - name: REWIND_DATA
+          value: {{ .Values.postgres.standby.rewind | squote }}
         command: 
         - su-exec
         - postgres

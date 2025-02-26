@@ -12,8 +12,10 @@ if [ -n "$(ls -A ${PGDATA})" ]; then
         echo "The target directory (${PGDATA}) is not a data directory! (PG_VERSION not found)" 1>&2
         exit 1
     fi
-    # note: if target and source are already on the same timeline, rewind does nothing 
-    pg_rewind -P --target-pgdata ${PGDATA} --source-server="user=postgres host=${MASTER_HOST}"
+    # note: if target and source are already on the same timeline, rewind does nothing
+    if [ "${REWIND_DATA:-false}" == "true" ]; then
+      pg_rewind -P --target-pgdata ${PGDATA} --source-server="user=postgres host=${MASTER_HOST}"
+    fi
 else
     # data directory is empty: take basebackup
     echo "Taking a basebackup from ${MASTER_HOST}..."  1>&2

@@ -11,6 +11,9 @@
 {{- if .Values.postgres.workMemory }}
 {{- $command = append $command (printf "--work_mem=%s" .Values.postgres.workMemory) -}}
 {{- end }}{{/* if .workMemory */}}
+{{- if .Values.postgres.logging.collectorEnabled }}
+{{- $command = append $command (printf "--logging_collector=on") -}}
+{{- end }}{{/* if .logging.collectorEnabled */}}
 
 {{- $fullname := (include "postgresql-cluster.fullname" .) -}}
 {{- $serviceName := (include "postgresql-cluster.postgres.serviceName" .) -}}
@@ -36,24 +39,10 @@ spec:
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForMaster" . | nindent 6 }}
-  {{- with .Values.postgres.pv }}
   volumeClaimTemplates:
-  # PVC template for data directory
-  - metadata:
-      name: data
-    spec:
-      accessModes: 
-      - ReadWriteOnce
-      storageClassName: {{ .dataDir.storageClassName }}
-      resources:
-        requests:
-          storage: {{ .dataDir.size }}
-      {{- if .dataDir.useSelector }}
-      selector:
-        matchLabels:
-          {{- include "postgresql-cluster.selectorLabelsForMasterData" $ | nindent 10 }}  
-          {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
-      {{- end }}{{/* if .dataDir.useSelector */}}
+  - {{- include "postgresql-cluster.postgres.pvcTemplateForMasterData" . | indent 4 }}  
+  {{- if .Values.postgres.pv.logsDir }}
+  - {{- include "postgresql-cluster.postgres.pvcTemplateForLogs" . | indent 4 }}
   {{- end }}
   # Pod template
   template:
@@ -144,6 +133,10 @@ spec:
         - name: archive
           mountPath: /var/backups/postgresql/archive
           subPathExpr: $(POD_NAME)
+        {{- if .Values.postgres.pv.logsDir }}
+        - name: logs
+          mountPath: /var/lib/postgresql/logs
+        {{- end }}{{/* if .Values.postgres.pv.logsDir */}}
         - name: postgres-password
           mountPath: /secrets/postgres-password
           readOnly: true
@@ -213,24 +206,10 @@ spec:
   selector:
     matchLabels:
       {{- include "postgresql-cluster.selectorLabelsForStandby" . | nindent 6 }}
-  {{- with .Values.postgres.pv }}
   volumeClaimTemplates:
-  # PVC template for data directory
-  - metadata:
-      name: data
-    spec:
-      accessModes: 
-      - ReadWriteOnce
-      storageClassName: {{ .dataDir.storageClassName }}
-      resources:
-        requests:
-          storage: {{ .dataDir.size }}
-      {{- if .dataDir.useSelector }}
-      selector:
-        matchLabels:
-          {{- include "postgresql-cluster.selectorLabelsForStandbyData" $ | nindent 10 }}  
-          {{- if .dataDir.extraMatchLabels }}{{ toYaml .dataDir.extraMatchLabels | nindent 10 }}{{- end }}
-      {{- end }}{{/* if .dataDir.useSelector */}}
+  - {{- include "postgresql-cluster.postgres.pvcTemplateForStandbyData" . | indent 4 }}  
+  {{- if .Values.postgres.pv.logsDir }}
+  - {{- include "postgresql-cluster.postgres.pvcTemplateForLogs" . | indent 4 }}
   {{- end }}
   # Pod template
   template:
@@ -394,6 +373,10 @@ spec:
         - name: archive
           mountPath: /var/backups/postgresql/archive
           subPathExpr: $(POD_NAME)
+        {{- if .Values.postgres.pv.logsDir }}
+        - name: logs
+          mountPath: /var/lib/postgresql/logs
+        {{- end }}{{/* if .Values.postgres.pv.logsDir */}}
         - name: postgres-password
           mountPath: /secrets/postgres-password
           readOnly: true

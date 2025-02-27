@@ -85,6 +85,18 @@ postgres:
       useSelector: true
       extraMatchLabels: 
         {}
+    #logsDir:
+    #  size: 256Mi
+    #  # define the storage class for logs directory
+    #  # note:  the corresponding PVC will require ReadWriteOnce access mode for the PV 
+    #  storageClassName: local-1
+    #  useSelector: true
+    #  extraMatchLabels: 
+    #    {}
+  logging:
+    # enable logging collector which allows file-based logging
+    # https://www.postgresql.org/docs/15/runtime-config-logging.html#GUC-LOGGING-COLLECTOR
+    collectorEnabled: false
   # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS
   maxNumConnections: 135
   # (shared_buffers)  https://www.postgresql.org/docs/10/runtime-config-resource.html 

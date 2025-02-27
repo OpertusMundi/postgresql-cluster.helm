@@ -206,3 +206,63 @@ helm.sh/hook-weight: "-3"
 helm.sh/hook-delete-policy: hook-failed
 {{- end }}{{/* define */}}
 
+{{- define "postgresql-cluster.postgres.pvcTemplateForMasterData" -}}
+{{- with .Values.postgres.pv.dataDir }}
+metadata:
+  name: data
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForMasterData" $ | nindent 10 }}  
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.dataDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.pvcTemplateForStandbyData" -}}
+{{- with .Values.postgres.pv.dataDir }}
+metadata:
+  name: data
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForStandbyData" $ | nindent 10 }}  
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.dataDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.pvcTemplateForLogs" -}}
+{{- with .Values.postgres.pv.logsDir }}
+metadata:
+  name: logs
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.logsDir */}}
+{{- end }}
+
+

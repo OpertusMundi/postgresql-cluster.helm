@@ -266,3 +266,43 @@ spec:
 {{- end }}
 
 
+{{- define "postgresql-cluster.postgres.containerForLogs" -}}
+name: tail
+image: busybox:1
+securityContext:
+  runAsUser: {{ .Values.postgres.securityContext.uid }}
+stdin: true
+workingDir: /tmp
+command:
+- sh
+- -eu
+- -c
+- |-
+  cp /var/lib/postgresql/data/current_logfiles .
+  logfile=$(awk '/^stderr\s/{print $2}' current_logfiles)
+  tail -v -n +1 -F ${logfile}
+livenessProbe:
+  exec:
+    command:
+    - diff
+    - -q
+    - /tmp/current_logfiles
+    - /var/lib/postgresql/data/current_logfiles
+  initialDelaySeconds: 18
+  periodSeconds: 6
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    memory: 32Mi
+volumeMounts:
+- name: data
+  mountPath: /var/lib/postgresql/data
+  subPath: {{ .Values.postgres.pv.dataDir.subPath }}
+  readOnly: true
+{{- if .Values.postgres.pv.logsDir }}
+- name: logs
+  mountPath: /var/lib/postgresql/logs
+  readOnly: true
+{{- end }}{{/* if .Values.postgres.pv.logsDir */}}
+{{- end }}

@@ -97,6 +97,8 @@ postgres:
     # enable logging collector which allows file-based logging
     # https://www.postgresql.org/docs/15/runtime-config-logging.html#GUC-LOGGING-COLLECTOR
     collectorEnabled: false
+    # spawn a separate container for tailing logs to stdout (only if collectorEnabled is true)
+    tailLogs: false
   # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS
   maxNumConnections: 135
   # (shared_buffers)  https://www.postgresql.org/docs/10/runtime-config-resource.html 

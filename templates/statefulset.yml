@@ -94,7 +94,8 @@ spec:
           name: {{ $fullname }}-db-init-scripts
           defaultMode: 0774
       containers:
-      - name: postgres
+      - 
+        name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
@@ -189,6 +190,9 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
+      {{- if and .Values.postgres.logging.collectorEnabled .Values.postgres.logging.tailLogs }}
+      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 10 }}
+      {{- end }}
       affinity:
         {{- toYaml (.Values.postgres.master.affinity | default .Values.affinity) | nindent 8 }}
 
@@ -255,7 +259,8 @@ spec:
       - name: pgpass
         emptyDir: {}
       initContainers:
-      - name: wait-for-master
+      - 
+        name: wait-for-master
         image: busybox:1
         imagePullPolicy: IfNotPresent
         command:
@@ -267,7 +272,8 @@ spec:
         - name: scripts
           mountPath: /opt/
           readOnly: true
-      - name: generate-pgpass
+      - 
+        name: generate-pgpass
         image: busybox:1
         imagePullPolicy: IfNotPresent
         securityContext:
@@ -298,7 +304,8 @@ spec:
           mountPath: /secrets/replication-password
           readOnly: true
       {{- if .Values.postgres.standby.prepareData }}
-      - name: prepare-data
+      - 
+        name: prepare-data
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
         env:
@@ -324,7 +331,8 @@ spec:
           mountPath: /opt/
           readOnly: true
       {{- end }}{{/* if .Values.postgres.standby.prepareData */}}
-      - name: generate-name
+      - 
+        name: generate-name
         image:  "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
         {{/*- see https://www.postgresql.org/docs/current/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES -*/}}
@@ -339,7 +347,8 @@ spec:
         - name: data
           mountPath: /var/lib/postgresql/data
       containers: 
-      - name: postgres
+      - 
+        name: postgres
         image: "{{ .Values.postgres.image }}"
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
@@ -419,5 +428,8 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError 
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
+      {{- if and .Values.postgres.logging.collectorEnabled .Values.postgres.logging.tailLogs }}
+      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 10 }}
+      {{- end }}
       affinity:
         {{- toYaml (.Values.postgres.standby.affinity | default .Values.affinity) | nindent 8 }}

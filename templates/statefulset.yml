@@ -327,6 +327,7 @@ spec:
           readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
+          subPath: {{ .Values.postgres.pv.dataDir.subPath }}
         - name: scripts
           mountPath: /opt/
           readOnly: true
@@ -346,6 +347,7 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
+          subPath: {{ .Values.postgres.pv.dataDir.subPath }}
       containers: 
       - 
         name: postgres

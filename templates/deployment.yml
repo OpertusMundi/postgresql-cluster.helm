@@ -77,8 +77,7 @@ spec:
         imagePullPolicy: IfNotPresent
         command:
         - /opt/wait-for-host.sh
-        - --timeout
-        - '60'
+        - --timeout=60
         - {{ $masterHost }}
         {{- range $i := (until $numOfReplicas) }}
         - {{ printf "%s-standby-%d.%s" $fullname $i $serviceDomain }}
@@ -220,7 +219,7 @@ spec:
       volumes:
       - name: pgpass
         secret:
-          secretName: {{ $fullname }}-pgpass
+          secretName: {{ $fullname }}-pgpass-for-psql
           defaultMode: 0640
       - name: home
         emptyDir: {}      

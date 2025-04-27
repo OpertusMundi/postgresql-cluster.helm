@@ -1,5 +1,5 @@
-#!/bin/bash 
-set -e 
+#!/bin/bash
+set -e
 
 [ -n "${USER_PASSWORDS_DIR}" ] || exit 0;
 if [ ! -d "${USER_PASSWORDS_DIR}" ]; then

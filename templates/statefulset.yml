@@ -24,7 +24,131 @@
 
 {{- $readinessProbeCommand := list "su-exec" "postgres" "pg_isready" "-h" "localhost" -}}
 
+{{- define "postgresql-cluster.postgres.pvcTemplateForMasterData" -}}
+{{- with .Values.postgres.pv.dataDir }}
+metadata:
+  name: data
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForMasterData" $ | nindent 10 }}  
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.dataDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.pvcTemplateForStandbyData" -}}
+{{- with .Values.postgres.pv.dataDir }}
+metadata:
+  name: data
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- include "postgresql-cluster.selectorLabelsForStandbyData" $ | nindent 10 }}  
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.dataDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.pvcTemplateForLogs" -}}
+{{- with .Values.postgres.pv.logsDir }}
+metadata:
+  name: logs
+spec:
+  accessModes: 
+  - ReadWriteOnce
+  storageClassName: {{ .storageClassName }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  {{- if .useSelector }}
+  selector:
+    matchLabels:
+      {{- if .extraMatchLabels }}{{ toYaml .extraMatchLabels | nindent 10 }}{{- end }}
+  {{- end }}{{/* if .useSelector */}}
+{{- end }}{{/* with .Values.postgres.pv.logsDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.containerForLogs" -}}
+name: tail
+image: busybox:1
+securityContext:
+  runAsUser: {{ .Values.postgres.securityContext.uid }}
+stdin: true
+workingDir: /tmp
+command:
+- sh
+- -eu
+- -c
+- |-
+  cp /var/lib/postgresql/data/current_logfiles .
+  logfile=$(awk '/^stderr\s/{print $2}' current_logfiles)
+  tail -v -n +1 -F ${logfile}
+livenessProbe:
+  exec:
+    command:
+    - diff
+    - -q
+    - /tmp/current_logfiles
+    - /var/lib/postgresql/data/current_logfiles
+  initialDelaySeconds: 18
+  periodSeconds: 6
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    memory: 32Mi
+volumeMounts:
+- name: data
+  mountPath: /var/lib/postgresql/data
+  subPath: {{ .Values.postgres.pv.dataDir.subPath }}
+  readOnly: true
+{{- if .Values.postgres.pv.logsDir }}
+- name: logs
+  mountPath: /var/lib/postgresql/logs
+  readOnly: true
+{{- end }}{{/* if .Values.postgres.pv.logsDir */}}
+{{- end }}
+
+{{- define "postgresql-cluster.postgres.containerForPreparingPgpass" -}}
+name: prepare-pgpass
+image: busybox:1 
+imagePullPolicy: IfNotPresent
+securityContext:
+  runAsUser: {{ .Values.postgres.securityContext.uid }}
+workingDir: /var/lib/postgresql/pgpass/
+command:
+- sh
+- -ue
+- -c 
+- |-
+  cp -v /secrets/pgpass .pgpass && chmod -v 0600 .pgpass
+volumeMounts:
+- name: pgpass
+  mountPath: /secrets/pgpass
+  subPath: pgpass
+  readOnly: true
+- name: pgpass-for-postgres
+  mountPath: /var/lib/postgresql/pgpass
+{{- end }}
+
+#
 # manifests
+#
 ---
 
 apiVersion: apps/v1
@@ -93,10 +217,18 @@ spec:
         configMap:
           name: {{ $fullname }}-db-init-scripts
           defaultMode: 0774
+      - name: pgpass
+        secret:
+          secretName: {{ $fullname }}-pgpass-for-postgres
+          defaultMode: 0640
+      - name: pgpass-for-postgres
+        emptyDir: {}
+      initContainers:
+      - {{ include "postgresql-cluster.postgres.containerForPreparingPgpass" . | nindent 8 }}
       containers:
       - 
         name: postgres
-        image: "{{ .Values.postgres.image }}"
+        image: {{ .Values.postgres.image | squote }}
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
         env:
@@ -127,6 +259,8 @@ spec:
           value: /certs/tls.key
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
+        - name: PGPASSFILE
+          value: /var/lib/postgresql/pgpass/.pgpass
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -161,6 +295,9 @@ spec:
           mountPath: /etc/postgresql/pg_hba.conf
           subPath: pg_hba.conf
           readOnly: true
+        - name: pgpass-for-postgres
+          mountPath: /var/lib/postgresql/pgpass
+          readOnly: true
         - name: config
           mountPath: /etc/postgresql/conf.d/01-replication.conf
           subPath: replication-for-master.conf
@@ -191,7 +328,7 @@ spec:
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
       {{- if and .Values.postgres.logging.collectorEnabled .Values.postgres.logging.tailLogs }}
-      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 10 }}
+      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 8 }}
       {{- end }}
       affinity:
         {{- toYaml (.Values.postgres.master.affinity | default .Values.affinity) | nindent 8 }}
@@ -257,60 +394,35 @@ spec:
           name: {{ $fullname }}-scripts
           defaultMode: 0774
       - name: pgpass
+        secret:
+          secretName: {{ $fullname }}-pgpass-for-postgres
+          defaultMode: 0600
+      - name: pgpass-for-postgres
         emptyDir: {}
       initContainers:
+      - {{ include "postgresql-cluster.postgres.containerForPreparingPgpass" . | nindent 8 }}
       - 
         name: wait-for-master
         image: busybox:1
         imagePullPolicy: IfNotPresent
         command:
         - /opt/wait-for-host.sh
-        - --timeout 
-        - '30'
+        - --timeout=30
         - {{ $masterHost }}
         volumeMounts:
         - name: scripts
           mountPath: /opt/
           readOnly: true
+      {{- if .Values.postgres.standby.prepareData }}
       - 
-        name: generate-pgpass
-        image: busybox:1
+        name: prepare-data
+        image: {{ .Values.postgres.image | squote }}
         imagePullPolicy: IfNotPresent
         securityContext:
           runAsUser: {{ .Values.postgres.securityContext.uid }}
         env:
-        - name: MASTER_HOST
-          value: {{ $masterHost }}
-        - name: REPLICATION_USER
-          value: replicator
-        - name: REPLICATION_PASSWORD_FILE
-          value: /secrets/replication-password/password
-        - name: POSTGRES_PASSWORD_FILE
-          value: /secrets/postgres-password/password
         - name: PGPASSFILE
-          value: /etc/postgresql/pgpass/.pgpass
-        command:
-        - /opt/generate-pgpass-for-standby.sh
-        volumeMounts:
-        - name: scripts
-          mountPath: /opt/
-          readOnly: true
-        - name: pgpass
-          mountPath: /etc/postgresql/pgpass 
-        - name: postgres-password
-          mountPath: /secrets/postgres-password
-          readOnly: true
-        - name: replication-password
-          mountPath: /secrets/replication-password
-          readOnly: true
-      {{- if .Values.postgres.standby.prepareData }}
-      - 
-        name: prepare-data
-        image: "{{ .Values.postgres.image }}"
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: PGPASSFILE
-          value: /etc/postgresql/pgpass/.pgpass
+          value: /var/lib/postgresql/pgpass/.pgpass
         - name: REPLICATION_USER
           value: replicator
         - name: MASTER_HOST
@@ -318,12 +430,10 @@ spec:
         - name: REWIND_DATA
           value: {{ .Values.postgres.standby.rewind | squote }}
         command: 
-        - su-exec
-        - postgres
         - /opt/prepare-data-for-standby.sh
         volumeMounts:
-        - name: pgpass
-          mountPath: /etc/postgresql/pgpass
+        - name: pgpass-for-postgres
+          mountPath: /var/lib/postgresql/pgpass
           readOnly: true
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -334,16 +444,17 @@ spec:
       {{- end }}{{/* if .Values.postgres.standby.prepareData */}}
       - 
         name: generate-name
-        image:  "{{ .Values.postgres.image }}"
+        image:  {{ .Values.postgres.image | squote }}
         imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: {{ .Values.postgres.securityContext.uid }}
         {{/*- see https://www.postgresql.org/docs/current/runtime-config-replication.html#GUC-SYNCHRONOUS-STANDBY-NAMES -*/}}
         command:
-        - su-exec
-        - postgres
         - bash
+        - -ue
         - -c
         - |-
-          printf "cluster_name = '%s'\n" ${HOSTNAME//-/_} > ${PGDATA}/01-cluster-name.conf
+          printf "cluster_name = '%s'\n" ${HOSTNAME//-/_} | tee ${PGDATA}/01-cluster-name.conf
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -351,7 +462,7 @@ spec:
       containers: 
       - 
         name: postgres
-        image: "{{ .Values.postgres.image }}"
+        image: {{ .Values.postgres.image | squote }}
         imagePullPolicy: IfNotPresent
         args: {{- toYaml $command | nindent 10 }}
         env:
@@ -372,7 +483,7 @@ spec:
         - name: TLS_CERT_FILE
           value: /certs/tls.crt
         - name: PGPASSFILE
-          value: /etc/postgresql/pgpass/.pgpass
+          value: /var/lib/postgresql/pgpass/.pgpass
         volumeMounts: 
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -402,8 +513,8 @@ spec:
           mountPath: /etc/postgresql/pg_hba.conf
           subPath: pg_hba.conf
           readOnly: true
-        - name: pgpass
-          mountPath: /etc/postgresql/pgpass 
+        - name: pgpass-for-postgres
+          mountPath: /var/lib/postgresql/pgpass 
         - name: config
           mountPath: /etc/postgresql/conf.d/01-replication.conf
           subPath: replication-for-standby.conf
@@ -431,7 +542,7 @@ spec:
         resources:
           {{- toYaml .Values.postgres.resources | nindent 10 }}
       {{- if and .Values.postgres.logging.collectorEnabled .Values.postgres.logging.tailLogs }}
-      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 10 }}
+      - {{ include "postgresql-cluster.postgres.containerForLogs" . | nindent 8 }}
       {{- end }}
       affinity:
         {{- toYaml (.Values.postgres.standby.affinity | default .Values.affinity) | nindent 8 }}

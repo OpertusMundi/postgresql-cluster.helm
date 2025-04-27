@@ -110,6 +110,10 @@ postgres:
     #configMapKeyRef: 
     #  name: postgres-1-config-extra
     #  key: ['shared-preload-libraries.conf']
+  # Add pgpass entries for external database clusters
+  # (to facilitate communication (logical replication or foreign tables) with external postgres clusters)
+  #pgpassExt:
+  #  secretName: postgres-1-pgpass-to-some-other-database-cluster
   # Limit resources for each server (master or standby)
   resources:
     limits:

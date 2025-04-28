@@ -29,7 +29,7 @@ monitorPassword:
   secretName:
   generatePassword: false
 
-# The secret holding the password of `pgpool` user (the administrator) for PgPool 
+# The secret holding the password of `pgpool` user (the administrator) for PgPool
 pgpoolAdminPassword:
   secretName:
   generatePassword: false
@@ -44,11 +44,11 @@ tls:
   secretName:
   # if not empty, request the TLS certificate from the given issuer (on pre-{install,upgrade} phase)
   issuerName:
-  # the kind of certificate issuer: ClusterIssuer, Issuer (meaningful only if issuer is given) 
+  # the kind of certificate issuer: ClusterIssuer, Issuer (meaningful only if issuer is given)
   issuerKind: Issuer
   certificate:
     # number of days to make a TLS certificate valid for (meaningful only if issuer is given)
-    numDays: 730  
+    numDays: 730
 
 # Affinity for all servers (unless a more specific affinity is defined)
 affinity: ~
@@ -61,37 +61,37 @@ postgres:
   serviceName:
   securityContext:
     # The id of the user/group running postgres
-    # (it depends on the image used, e.g. is different in alpine/ubuntu variants) 
+    # (it depends on the image used, e.g. is different in alpine/ubuntu variants)
     uid: 70
-    gid: 70 
+    gid: 70
   pv:
     dataDir:
       size: 256Mi
       # define the storage class for data directories
       # note:  the corresponding PVC will require ReadWriteOnce access mode for the PV
       storageClassName: local-1
-      # should we define a selector on the PVC? 
+      # should we define a selector on the PVC?
       # if not, binding only works by specifying a claimRef on the PV (or will dynamic provisioning)
       useSelector: true
       extraMatchLabels:
         {}
       # subPath on the data volume to be mounted as a data directory
       subPath:
-    archiveDir: 
+    archiveDir:
       size: 256Mi
       # define the storage class for archive directory
       # note: the corresponding PVC will require ReadWriteMany access mode for the PV
       storageClassName: nfs-1
       useSelector: true
-      extraMatchLabels: 
+      extraMatchLabels:
         {}
     #logsDir:
     #  size: 256Mi
     #  # define the storage class for logs directory
-    #  # note:  the corresponding PVC will require ReadWriteOnce access mode for the PV 
+    #  # note:  the corresponding PVC will require ReadWriteOnce access mode for the PV
     #  storageClassName: local-1
     #  useSelector: true
-    #  extraMatchLabels: 
+    #  extraMatchLabels:
     #    {}
   logging:
     # enable logging collector which allows file-based logging
@@ -99,15 +99,21 @@ postgres:
     collectorEnabled: false
     # spawn a separate container for tailing logs to stdout (only if collectorEnabled is true)
     tailLogs: false
-  # (max_connections) https://www.postgresql.org/docs/10/runtime-config-connection.html#RUNTIME-CONFIG-CONNECTION-SETTINGS
+  # (wal_level) accepted values are: 'replica', 'logical'
+  # https://www.postgresql.org/docs/15/runtime-config-wal.html#RUNTIME-CONFIG-WAL-SETTINGS
+  walLevel: 'replica'
+  # (max_connections)
+  # https://www.postgresql.org/docs/15/runtime-config-connection.html
   maxNumConnections: 135
-  # (shared_buffers)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
+  # (shared_buffers)
+  # https://www.postgresql.org/docs/15/runtime-config-resource.html#RUNTIME-CONFIG-RESOURCE-MEMORY
   sharedBuffersSize: '128MB'
-  # (work_mem)  https://www.postgresql.org/docs/10/runtime-config-resource.html 
+  # (work_mem)
+  # https://www.postgresql.org/docs/15/runtime-config-resource.html#RUNTIME-CONFIG-RESOURCE-MEMORY
   workMemory: '6MB'
   # Add extra configuration files (under /etc/postgresql/conf.d) from a configMap
   #configurationFrom:
-    #configMapKeyRef: 
+    #configMapKeyRef:
     #  name: postgres-1-config-extra
     #  key: ['shared-preload-libraries.conf']
   # Add pgpass entries for external database clusters
@@ -148,11 +154,11 @@ pgpool:
   securityContext:
     # The id of the user/group running pgpool (user "postgres")
     uid: 70
-    gid: 70 
+    gid: 70
   serviceName: ~
   # numProcs is the number of children processes to spawn (see num_init_children of PgPool configuration)
   # see https://www.pgpool.net/docs/latest/en/html/runtime-config-connection.html#GUC-NUM-INIT-CHILDREN
-  # NOTE: numProcs is also the maximum number of concurrent client connections! (as each connecting client is assigned 
+  # NOTE: numProcs is also the maximum number of concurrent client connections! (as each connecting client is assigned
   # to a single (available) child process)
   numProcs: 32
   # poolSize is the size of per-child connection pool (see max_pool of PgPool configuration)
@@ -161,9 +167,9 @@ pgpool:
   poolSize: 4
   #childLifeTime: '5min'
   #clientIdleLimit: '0'
-  # How should PgPool load-balance readonly queries? 
+  # How should PgPool load-balance readonly queries?
   #  * (null): Do not load balance (use only master)
-  #  * all: Load balance to all members of the cluster (some queries may return inconsistent results 
+  #  * all: Load balance to all members of the cluster (some queries may return inconsistent results
   #      due to replication lag)
   #  * sync: Load balance to master and synchronous standbys (this is only meaningful for synchronous replication,
   #      i.e. when postgres.replicasToSync > 0)

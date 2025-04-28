@@ -2,6 +2,7 @@
 
 {{- $command := list "postgres" "-c" "config_file=$(CONFIG_FILE)" -}}
 {{/* https://stackoverflow.com/a/66548354/1943126 */}}
+{{- $command = append $command (printf "--wal_level=%s" .Values.postgres.walLevel) }}
 {{- if .Values.postgres.maxNumConnections }}
 {{- $command = append $command (printf "--max_connections=%d" (int .Values.postgres.maxNumConnections)) -}}
 {{- end }}{{/* if .maxNumConnections */}}
